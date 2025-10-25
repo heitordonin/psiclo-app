@@ -1,57 +1,19 @@
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowDownIcon, ArrowUpIcon, TrendingUp } from "lucide-react";
-import { formatCurrency, formatShortDate } from "@/lib/formatters";
+import { useMetrics } from "@/hooks/useMetrics";
+import { useTransactions } from "@/hooks/useTransactions";
 import { BottomNav } from "@/components/BottomNav";
+import { MetricCard } from "@/components/dashboard/MetricCard";
+import { WeeklyChart } from "@/components/dashboard/WeeklyChart";
+import { RecentTransactions } from "@/components/dashboard/RecentTransactions";
+import { QuickActions } from "@/components/dashboard/QuickActions";
+import { TrendingUp, ArrowUpIcon, ArrowDownIcon } from "lucide-react";
 
 export default function Dashboard() {
-  const { data: transactions } = useQuery({
-    queryKey: ["recent-transactions"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("transactions")
-        .select("*, budget_categories(name, color, icon)")
-        .order("transaction_date", { ascending: false })
-        .limit(5);
-
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const { data: summary } = useQuery({
-    queryKey: ["monthly-summary"],
-    queryFn: async () => {
-      const startOfMonth = new Date();
-      startOfMonth.setDate(1);
-      startOfMonth.setHours(0, 0, 0, 0);
-
-      const { data, error } = await supabase
-        .from("transactions")
-        .select("amount, type")
-        .gte("transaction_date", startOfMonth.toISOString());
-
-      if (error) throw error;
-
-      const income = data
-        .filter((t) => t.type === "income")
-        .reduce((sum, t) => sum + Number(t.amount), 0);
-
-      const expenses = data
-        .filter((t) => t.type === "expense")
-        .reduce((sum, t) => sum + Number(t.amount), 0);
-
-      return {
-        income,
-        expenses,
-        balance: income - expenses,
-      };
-    },
-  });
+  const { data: metrics, isLoading: metricsLoading } = useMetrics("current_month");
+  const { data: recentTransactions, isLoading: txLoading } = useTransactions({ limit: 5 });
 
   return (
     <div className="min-h-screen bg-muted/30 pb-20">
+      {/* Header */}
       <div className="bg-primary px-4 pb-8 pt-6">
         <h1 className="mb-2 text-2xl font-bold text-primary-foreground">
           Olá! 👋
@@ -62,106 +24,51 @@ export default function Dashboard() {
       </div>
 
       <div className="space-y-4 px-4 -mt-4">
-        {/* Metric Cards */}
-        <div className="grid gap-3">
-          <Card className="border-none shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Saldo do Mês
-              </CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {formatCurrency(summary?.balance ?? 0)}
-              </div>
-            </CardContent>
-          </Card>
+        {/* Saldo do Mês */}
+        <MetricCard
+          title="Saldo do Mês"
+          value={metrics?.balance ?? 0}
+          icon={TrendingUp}
+          isLoading={metricsLoading}
+        />
 
-          <div className="grid grid-cols-2 gap-3">
-            <Card className="border-none shadow-sm">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Receitas
-                </CardTitle>
-                <ArrowUpIcon className="h-4 w-4 text-success" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-xl font-bold text-success">
-                  {formatCurrency(summary?.income ?? 0)}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-none shadow-sm">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Despesas
-                </CardTitle>
-                <ArrowDownIcon className="h-4 w-4 text-destructive" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-xl font-bold text-destructive">
-                  {formatCurrency(summary?.expenses ?? 0)}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+        {/* Receitas e Despesas */}
+        <div className="grid grid-cols-2 gap-3">
+          <MetricCard
+            title="Receitas"
+            value={metrics?.income ?? 0}
+            icon={ArrowUpIcon}
+            iconColor="text-success"
+            valueColor="text-success"
+            isLoading={metricsLoading}
+          />
+          <MetricCard
+            title="Despesas"
+            value={metrics?.expenses ?? 0}
+            icon={ArrowDownIcon}
+            iconColor="text-destructive"
+            valueColor="text-destructive"
+            isLoading={metricsLoading}
+          />
         </div>
+      </div>
 
-        {/* Recent Transactions */}
-        <Card className="border-none shadow-sm">
-          <CardHeader>
-            <CardTitle>Transações Recentes</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {transactions?.length === 0 && (
-              <p className="text-center text-sm text-muted-foreground py-8">
-                Nenhuma transação registrada ainda
-              </p>
-            )}
-            {transactions?.map((transaction) => (
-              <div
-                key={transaction.id}
-                className="flex items-center justify-between rounded-lg border p-3"
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className="flex h-10 w-10 items-center justify-center rounded-full"
-                    style={{
-                      backgroundColor: transaction.budget_categories?.color + "20",
-                    }}
-                  >
-                    <span className="text-lg">
-                      {transaction.budget_categories?.icon === "Utensils" && "🍽️"}
-                      {transaction.budget_categories?.icon === "Car" && "🚗"}
-                      {transaction.budget_categories?.icon === "Home" && "🏠"}
-                      {transaction.budget_categories?.icon === "Heart" && "❤️"}
-                      {transaction.budget_categories?.icon === "Banknote" && "💵"}
-                      {!transaction.budget_categories && "💰"}
-                    </span>
-                  </div>
-                  <div>
-                    <p className="font-medium">{transaction.description}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {formatShortDate(transaction.transaction_date)}
-                    </p>
-                  </div>
-                </div>
-                <div
-                  className={`text-right font-semibold ${
-                    transaction.type === "income"
-                      ? "text-success"
-                      : "text-destructive"
-                  }`}
-                >
-                  {transaction.type === "income" ? "+" : "-"}
-                  {formatCurrency(Number(transaction.amount))}
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+      {/* Quick Actions */}
+      <div className="mt-4">
+        <QuickActions />
+      </div>
+
+      {/* Gráfico Semanal */}
+      <div className="px-4 mt-4">
+        {metrics?.dailyData && <WeeklyChart data={metrics.dailyData} />}
+      </div>
+
+      {/* Transações Recentes */}
+      <div className="px-4 mt-4">
+        <RecentTransactions 
+          transactions={recentTransactions} 
+          isLoading={txLoading} 
+        />
       </div>
 
       <BottomNav />

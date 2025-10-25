@@ -52,9 +52,10 @@ interface TransactionModalProps {
   open: boolean;
   onClose: () => void;
   transaction?: Transaction;
+  defaultType?: 'income' | 'expense';
 }
 
-export function TransactionModal({ open, onClose, transaction }: TransactionModalProps) {
+export function TransactionModal({ open, onClose, transaction, defaultType = 'expense' }: TransactionModalProps) {
   const isEditing = !!transaction;
   const { user } = useAuth();
   const createMutation = useCreateTransaction();
@@ -67,7 +68,7 @@ export function TransactionModal({ open, onClose, transaction }: TransactionModa
       description: "",
       transaction_date: new Date(),
       category_id: "",
-      type: "expense",
+      type: defaultType,
       is_recurring: false,
       recurrence_pattern: undefined,
     },
@@ -95,7 +96,7 @@ export function TransactionModal({ open, onClose, transaction }: TransactionModa
         description: "",
         transaction_date: new Date(),
         category_id: "",
-        type: "expense",
+        type: defaultType,
         is_recurring: false,
         recurrence_pattern: undefined,
       });
