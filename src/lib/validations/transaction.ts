@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { startOfDay } from "date-fns";
 
 export const transactionSchema = z.object({
   amount: z
@@ -13,7 +14,10 @@ export const transactionSchema = z.object({
     .max(100, "Máximo 100 caracteres"),
   transaction_date: z.date({
     required_error: "Data é obrigatória",
-  }).max(new Date(), "Data não pode ser futura"),
+  }).refine(
+    (date) => startOfDay(date) <= startOfDay(new Date()),
+    { message: "Data não pode ser futura" }
+  ),
   category_id: z.string().uuid("Categoria é obrigatória"),
   type: z.enum(["income", "expense"], {
     required_error: "Tipo é obrigatório",
