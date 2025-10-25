@@ -2,10 +2,12 @@ import { BottomNav } from "@/components/BottomNav";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { LogOut } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { LogOut, Tag } from "lucide-react";
 
 export default function Profile() {
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-muted/30 pb-20">
@@ -25,16 +27,39 @@ export default function Profile() {
               <p className="text-sm text-muted-foreground">Email</p>
               <p className="font-medium">{user?.email}</p>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Card de Configurações */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Configurações</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
             <Button
-              onClick={signOut}
-              variant="destructive"
-              className="w-full"
+              variant="ghost"
+              className="w-full justify-start px-6 py-4 h-auto"
+              onClick={() => navigate('/categories')}
             >
-              <LogOut className="mr-2 h-4 w-4" />
-              Sair
+              <Tag className="mr-3 h-5 w-5 text-muted-foreground" />
+              <div className="text-left">
+                <p className="font-medium">Gerenciar Categorias</p>
+                <p className="text-xs text-muted-foreground">
+                  Crie e personalize suas categorias
+                </p>
+              </div>
             </Button>
           </CardContent>
         </Card>
+
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={signOut}
+        >
+          <LogOut className="mr-2 h-4 w-4" />
+          Sair
+        </Button>
       </div>
 
       <BottomNav />

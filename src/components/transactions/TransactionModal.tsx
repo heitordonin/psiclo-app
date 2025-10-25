@@ -1,9 +1,10 @@
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, TrendingUp, TrendingDown } from "lucide-react";
+import { CalendarIcon, TrendingUp, TrendingDown, Settings } from "lucide-react";
 import * as LucideIcons from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -57,6 +58,7 @@ interface TransactionModalProps {
 
 export function TransactionModal({ open, onClose, transaction, defaultType = 'expense' }: TransactionModalProps) {
   const isEditing = !!transaction;
+  const navigate = useNavigate();
   const { user } = useAuth();
   const createMutation = useCreateTransaction();
   const updateMutation = useUpdateTransaction();
@@ -262,32 +264,50 @@ export function TransactionModal({ open, onClose, transaction, defaultType = 'ex
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Categoria</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione uma categoria" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {categories?.map((category) => {
-                        const IconComponent = category.icon
-                          ? (LucideIcons[category.icon as keyof typeof LucideIcons] as React.ComponentType<{ className?: string }>)
-                          : LucideIcons.DollarSign;
-                        
-                        return (
-                          <SelectItem key={category.id} value={category.id}>
-                            <div className="flex items-center gap-2">
-                              <IconComponent
-                                className="h-4 w-4"
-                                style={{ color: category.color || "#059669" }}
-                              />
-                              <span>{category.name}</span>
-                            </div>
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex gap-2">
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Selecione uma categoria" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {categories?.map((category) => {
+                          const IconComponent = category.icon
+                            ? (LucideIcons[category.icon as keyof typeof LucideIcons] as React.ComponentType<{ className?: string }>)
+                            : LucideIcons.DollarSign;
+                          
+                          return (
+                            <SelectItem key={category.id} value={category.id}>
+                              <div className="flex items-center gap-2">
+                                {IconComponent && (
+                                  <IconComponent
+                                    className="h-4 w-4"
+                                    style={{ color: category.color || "#059669" }}
+                                  />
+                                )}
+                                <span>{category.name}</span>
+                              </div>
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                    
+                    {/* Botão Gerenciar Categorias */}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => {
+                        onClose();
+                        navigate('/categories');
+                      }}
+                      title="Gerenciar categorias"
+                    >
+                      <Settings className="h-4 w-4" />
+                    </Button>
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}

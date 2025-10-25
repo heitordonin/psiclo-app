@@ -21,6 +21,7 @@ export type Database = {
           created_at: string | null
           icon: string | null
           id: string
+          is_default: boolean | null
           name: string
           parent_id: string | null
           type: string
@@ -32,6 +33,7 @@ export type Database = {
           created_at?: string | null
           icon?: string | null
           id?: string
+          is_default?: boolean | null
           name: string
           parent_id?: string | null
           type: string
@@ -43,6 +45,7 @@ export type Database = {
           created_at?: string | null
           icon?: string | null
           id?: string
+          is_default?: boolean | null
           name?: string
           parent_id?: string | null
           type?: string
