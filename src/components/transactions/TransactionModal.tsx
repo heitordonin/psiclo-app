@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router-dom";
-import { format } from "date-fns";
+import { format, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CalendarIcon, TrendingUp, TrendingDown, Settings } from "lucide-react";
 import * as LucideIcons from "lucide-react";
@@ -107,6 +107,8 @@ export function TransactionModal({ open, onClose, transaction, defaultType = 'ex
 
   const onSubmit = async (data: TransactionFormData) => {
     if (!user) return;
+    
+    console.debug("[Transaction submit] date:", data.transaction_date, "type:", typeof data.transaction_date);
     
     try {
       if (isEditing) {
@@ -244,9 +246,14 @@ export function TransactionModal({ open, onClose, transaction, defaultType = 'ex
                     <PopoverContent className="w-auto p-0" align="start">
                       <Calendar
                         mode="single"
+                        required
                         selected={field.value}
-                        onSelect={field.onChange}
-                        disabled={(date) => date > new Date()}
+                        onSelect={(date) => {
+                          if (date) {
+                            form.setValue("transaction_date", date, { shouldValidate: true });
+                          }
+                        }}
+                        disabled={(date) => startOfDay(date) > startOfDay(new Date())}
                         initialFocus
                         locale={ptBR}
                       />

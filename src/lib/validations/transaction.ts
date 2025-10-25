@@ -12,8 +12,9 @@ export const transactionSchema = z.object({
     .string()
     .min(1, "Descrição é obrigatória")
     .max(100, "Máximo 100 caracteres"),
-  transaction_date: z.date({
+  transaction_date: z.coerce.date({
     required_error: "Data é obrigatória",
+    invalid_type_error: "Data inválida",
   }).refine(
     (date) => startOfDay(date) <= startOfDay(new Date()),
     { message: "Data não pode ser futura" }
