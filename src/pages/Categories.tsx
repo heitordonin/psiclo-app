@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory } from "@/hooks/useCategories";
 import { BottomNav } from "@/components/BottomNav";
@@ -48,18 +48,27 @@ export default function Categories() {
   const defaultCategories = categories?.filter(c => c.is_default) || [];
   const customCategories = categories?.filter(c => !c.is_default) || [];
 
+  // Ref para evitar múltiplas tentativas de backfill
+  const attemptedSeedRef = useRef(false);
+
   // Auto-backfill: popular categorias padrão se não existirem
   useEffect(() => {
-    if (!isLoading && defaultCategories.length === 0) {
+    if (!isLoading && defaultCategories.length === 0 && !attemptedSeedRef.current) {
+      attemptedSeedRef.current = true;
+      
       const backfillCategories = async () => {
-        try {
-          await supabase.rpc('seed_default_categories_for_me');
-          queryClient.invalidateQueries({ queryKey: ['categories'] });
-          toast.success('Categorias padrão adicionadas');
-        } catch (error) {
+        const { error } = await supabase.rpc('seed_default_categories_for_me');
+        
+        if (error) {
           console.error('Erro ao adicionar categorias padrão:', error);
+          toast.error(`Erro ao carregar categorias: ${error.message}`);
+          attemptedSeedRef.current = false; // Permitir nova tentativa em caso de erro
+        } else {
+          await queryClient.invalidateQueries({ queryKey: ['categories'] });
+          toast.success('Categorias padrão adicionadas');
         }
       };
+      
       backfillCategories();
     }
   }, [isLoading, defaultCategories.length, queryClient]);
