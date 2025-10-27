@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import type { CategoryFormData } from "@/lib/validations/transaction";
 import type { Database } from "@/integrations/supabase/types";
 
-type Category = Database["public"]["Tables"]["budget_categories"]["Row"];
+export type Category = Database["public"]["Tables"]["budget_categories"]["Row"];
 
 export type CategoryWithSubcategories = Category & {
   subcategories?: Category[];

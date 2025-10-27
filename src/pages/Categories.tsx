@@ -1,243 +1,317 @@
-import React, { useMemo, useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
-
-import { supabase } from '@/integrations/supabase/client';
-
-// Adapter que eu adicionei no PR #3
+import { useState } from "react";
+import { Plus, Edit2, Trash2, AlertCircle } from "lucide-react";
 import {
-  listCategoriesAll,
-  createUserCategory,
-  updateUserCategory,
-  deleteUserCategory,
-} from '@/integrations/supabase/categoriesAllAdapter';
-
-// Tipagem simples (pode usar seus tipos do Supabase se preferir)
-type Kind = 'receita' | 'despesa' | 'transferencia';
-
-type CategoryRow = {
-  id: string;
-  user_id: string | null;
-  name: string;
-  kind: Kind;
-  sort_order: number;
-  locked: boolean;       // true = padrão (template), false = do usuário
-  source: 'template' | 'user';
-};
+  useCategories,
+  useCreateCategory,
+  useUpdateCategory,
+  useDeleteCategory,
+  organizeCategoriesHierarchy,
+  type Category,
+  type CategoryWithSubcategories,
+} from "@/hooks/useCategories";
+import { BottomNav } from "@/components/BottomNav";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { CategoryIcon } from "@/components/categories/CategoryIcon";
+import { CategoryModal } from "@/components/categories/CategoryModal";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function CategoriesPage() {
-  const queryClient = useQueryClient();
+  const [selectedTab, setSelectedTab] = useState<"income" | "expense">("expense");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | undefined>();
+  const [deletingCategory, setDeletingCategory] = useState<Category | undefined>();
 
-  // Inputs simples pra criar/editar
-  const [newName, setNewName] = useState('');
-  const [newKind, setNewKind] = useState<Kind>('receita');
+  const { data: categories, isLoading, isError, refetch } = useCategories("all");
+  const createMutation = useCreateCategory();
+  const updateMutation = useUpdateCategory();
+  const deleteMutation = useDeleteCategory();
 
-  // Carregar tudo da view unificada
-  const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['categories_all'],
-    queryFn: async () => {
-      const rows = (await listCategoriesAll(supabase)) as CategoryRow[];
-      return rows;
-    },
-    staleTime: 30_000,
-  });
+  const filteredCategories = categories?.filter((c) => c.type === selectedTab) || [];
+  const defaultCategories = filteredCategories.filter((c) => c.is_default);
+  const customCategories = filteredCategories.filter((c) => !c.is_default);
 
-  const categories = data ?? [];
+  const { parents: defaultHierarchy } = organizeCategoriesHierarchy(defaultCategories);
+  const { parents: customHierarchy } = organizeCategoriesHierarchy(customCategories);
 
-  const receitas = useMemo(
-    () => categories.filter((c) => c.kind === 'receita'),
-    [categories],
-  );
-  const despesas = useMemo(
-    () => categories.filter((c) => c.kind === 'despesa'),
-    [categories],
-  );
-  const transfer = useMemo(
-    () => categories.filter((c) => c.kind === 'transferencia'),
-    [categories],
-  );
+  const handleCreate = (data: any) => {
+    createMutation.mutate(data, {
+      onSuccess: () => {
+        setIsModalOpen(false);
+      },
+    });
+  };
 
-  async function handleCreate() {
-    try {
-      if (!newName.trim()) {
-        toast.error('Informe um nome');
-        return;
-      }
-      await createUserCategory(supabase, {
-        name: newName.trim(),
-        kind: newKind,
-        sort_order: 0,
+  const handleEdit = (category: Category) => {
+    setEditingCategory(category);
+    setIsModalOpen(true);
+  };
+
+  const handleUpdate = (data: any) => {
+    if (editingCategory) {
+      updateMutation.mutate(
+        { id: editingCategory.id, ...data },
+        {
+          onSuccess: () => {
+            setIsModalOpen(false);
+            setEditingCategory(undefined);
+          },
+        }
+      );
+    }
+  };
+
+  const handleDeleteConfirm = () => {
+    if (deletingCategory) {
+      deleteMutation.mutate(deletingCategory.id, {
+        onSuccess: () => {
+          setDeletingCategory(undefined);
+        },
+        onError: () => {
+          setDeletingCategory(undefined);
+        },
       });
-      setNewName('');
-      await queryClient.invalidateQueries({ queryKey: ['categories_all'] });
-      toast.success('Categoria criada');
-    } catch (err: any) {
-      console.error(err);
-      toast.error(err?.message ?? 'Erro ao criar categoria');
     }
+  };
+
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+    setEditingCategory(undefined);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen pb-20 bg-background">
+        <div className="bg-primary text-primary-foreground p-6">
+          <Skeleton className="h-8 w-40 bg-primary-foreground/20" />
+        </div>
+        <div className="p-6 space-y-4">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-32 w-full" />
+          <Skeleton className="h-32 w-full" />
+        </div>
+        <BottomNav />
+      </div>
+    );
   }
 
-  async function handleRename(row: CategoryRow) {
-    if (row.locked) {
-      toast.info('Categorias padrão não podem ser editadas.');
-      return;
-    }
-    const name = prompt('Novo nome da categoria:', row.name);
-    if (!name || !name.trim()) return;
-
-    try {
-      await updateUserCategory(supabase, row.id, { name: name.trim() });
-      await queryClient.invalidateQueries({ queryKey: ['categories_all'] });
-      toast.success('Categoria atualizada');
-    } catch (err: any) {
-      console.error(err);
-      toast.error(err?.message ?? 'Erro ao atualizar');
-    }
+  if (isError) {
+    return (
+      <div className="min-h-screen pb-20 bg-background">
+        <div className="bg-primary text-primary-foreground p-6">
+          <h1 className="text-2xl font-bold">Categorias</h1>
+        </div>
+        <div className="p-6">
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Erro ao carregar categorias.{" "}
+              <Button variant="link" onClick={() => refetch()} className="p-0 h-auto">
+                Tentar novamente
+              </Button>
+            </AlertDescription>
+          </Alert>
+        </div>
+        <BottomNav />
+      </div>
+    );
   }
-
-  async function handleDelete(row: CategoryRow) {
-    if (row.locked) {
-      toast.info('Categorias padrão não podem ser excluídas.');
-      return;
-    }
-    const ok = confirm(`Excluir a categoria "${row.name}"?`);
-    if (!ok) return;
-
-    try {
-      await deleteUserCategory(supabase, row.id);
-      await queryClient.invalidateQueries({ queryKey: ['categories_all'] });
-      toast.success('Categoria excluída');
-    } catch (err: any) {
-      console.error(err);
-      toast.error(err?.message ?? 'Erro ao excluir');
-    }
-  }
-
-  if (isLoading) return <div>Carregando categorias...</div>;
-  if (isError) return <div>Erro ao carregar. <button onClick={() => refetch()}>Tentar novamente</button></div>;
 
   return (
-    <div className="p-6 space-y-8">
-      <h1 className="text-2xl font-semibold">Categorias</h1>
-
-      {/* Criar categoria do usuário */}
-      <div className="flex items-end gap-3">
-        <div className="flex flex-col">
-          <label className="text-sm mb-1">Nome</label>
-          <input
-            className="border rounded p-2 min-w-[240px] bg-background"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            placeholder="Ex.: Marketing, Aluguel, etc."
-          />
-        </div>
-        <div className="flex flex-col">
-          <label className="text-sm mb-1">Tipo</label>
-          <select
-            className="border rounded p-2 bg-background"
-            value={newKind}
-            onChange={(e) => setNewKind(e.target.value as Kind)}
+    <div className="min-h-screen pb-20 bg-background">
+      {/* Header */}
+      <div className="bg-primary text-primary-foreground p-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">Categorias</h1>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setIsModalOpen(true)}
           >
-            <option value="receita">Receita</option>
-            <option value="despesa">Despesa</option>
-            <option value="transferencia">Transferência</option>
-          </select>
+            <Plus className="h-4 w-4 mr-2" />
+            Nova Categoria
+          </Button>
         </div>
-        <button onClick={handleCreate} className="px-4 py-2 rounded bg-primary text-primary-foreground">
-          Adicionar
-        </button>
       </div>
 
-      {/* Listagens */}
-      <Section
-        title="Receitas"
-        rows={receitas}
-        onRename={handleRename}
-        onDelete={handleDelete}
+      {/* Content */}
+      <div className="p-6">
+        <Tabs value={selectedTab} onValueChange={(v) => setSelectedTab(v as "income" | "expense")}>
+          <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsTrigger value="income">Receitas</TabsTrigger>
+            <TabsTrigger value="expense">Despesas</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="income" className="space-y-6">
+            <CategorySection
+              title="Categorias Padrão"
+              categories={defaultHierarchy}
+              onEdit={handleEdit}
+              onDelete={setDeletingCategory}
+              emptyMessage="Nenhuma categoria padrão de receita"
+            />
+            <CategorySection
+              title="Minhas Categorias"
+              categories={customHierarchy}
+              onEdit={handleEdit}
+              onDelete={setDeletingCategory}
+              emptyMessage="Nenhuma categoria personalizada. Crie a primeira!"
+            />
+          </TabsContent>
+
+          <TabsContent value="expense" className="space-y-6">
+            <CategorySection
+              title="Categorias Padrão"
+              categories={defaultHierarchy}
+              onEdit={handleEdit}
+              onDelete={setDeletingCategory}
+              emptyMessage="Nenhuma categoria padrão de despesa"
+            />
+            <CategorySection
+              title="Minhas Categorias"
+              categories={customHierarchy}
+              onEdit={handleEdit}
+              onDelete={setDeletingCategory}
+              emptyMessage="Nenhuma categoria personalizada. Crie a primeira!"
+            />
+          </TabsContent>
+        </Tabs>
+      </div>
+
+      {/* Modals */}
+      <CategoryModal
+        open={isModalOpen}
+        onClose={handleModalClose}
+        category={editingCategory}
+        onSubmit={editingCategory ? handleUpdate : handleCreate}
       />
-      <Section
-        title="Despesas"
-        rows={despesas}
-        onRename={handleRename}
-        onDelete={handleDelete}
-      />
-      <Section
-        title="Transferências"
-        rows={transfer}
-        onRename={handleRename}
-        onDelete={handleDelete}
-      />
+
+      <AlertDialog open={!!deletingCategory} onOpenChange={() => setDeletingCategory(undefined)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir a categoria "{deletingCategory?.name}"? Esta ação não
+              pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm}>Excluir</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <BottomNav />
     </div>
   );
 }
 
-function Section({
-  title,
-  rows,
-  onRename,
-  onDelete,
-}: {
+interface CategorySectionProps {
   title: string;
-  rows: CategoryRow[];
-  onRename: (row: CategoryRow) => void;
-  onDelete: (row: CategoryRow) => void;
-}) {
+  categories: CategoryWithSubcategories[];
+  onEdit: (category: Category) => void;
+  onDelete: (category: Category) => void;
+  emptyMessage: string;
+}
+
+function CategorySection({ title, categories, onEdit, onDelete, emptyMessage }: CategorySectionProps) {
+  if (categories.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">{title}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">{emptyMessage}</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
-    <div>
-      <h2 className="text-xl font-medium mb-3">{title}</h2>
-      <div className="border rounded-lg overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-muted">
-            <tr>
-              <th className="text-left p-2">Nome</th>
-              <th className="text-left p-2">Bloqueada</th>
-              <th className="text-right p-2">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 && (
-              <tr>
-                <td className="p-3 text-muted-foreground" colSpan={3}>
-                  Nenhuma categoria
-                </td>
-              </tr>
-            )}
-            {rows.map((row) => {
-              const canEdit = !row.locked;
-              const canDelete = !row.locked;
-              return (
-                <tr key={`${row.source}-${row.id}`} className="border-t">
-                  <td className="p-2 align-middle">
-                    {row.name}
-                    {row.locked && <span className="ml-2 text-xs px-2 py-0.5 rounded bg-muted-foreground/10">padrão</span>}
-                  </td>
-                  <td className="p-2 align-middle">{row.locked ? 'Sim' : 'Não'}</td>
-                  <td className="p-2 align-middle">
-                    <div className="flex gap-2 justify-end">
-                      <button
-                        className="px-2 py-1 border rounded disabled:opacity-50"
-                        onClick={() => onRename(row)}
-                        disabled={!canEdit}
-                        title={row.locked ? 'Categoria padrão não pode ser editada' : 'Editar'}
-                      >
-                        Editar
-                      </button>
-                      <button
-                        className="px-2 py-1 border rounded disabled:opacity-50"
-                        onClick={() => onDelete(row)}
-                        disabled={!canDelete}
-                        title={row.locked ? 'Categoria padrão não pode ser excluída' : 'Excluir'}
-                      >
-                        Excluir
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg">{title}</CardTitle>
+      </CardHeader>
+      <CardContent className="p-0">
+        <div className="divide-y">
+          {categories.map((category) => (
+            <CategoryItem
+              key={category.id}
+              category={category}
+              onEdit={() => onEdit(category)}
+              onDelete={() => onDelete(category)}
+            />
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+interface CategoryItemProps {
+  category: CategoryWithSubcategories;
+  onEdit: () => void;
+  onDelete: () => void;
+}
+
+function CategoryItem({ category, onEdit, onDelete }: CategoryItemProps) {
+  const canEdit = !category.is_default;
+
+  return (
+    <div className="p-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3 flex-1">
+          <CategoryIcon icon={category.icon} color={category.color} />
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <span className="font-medium">{category.name}</span>
+              {category.is_default && (
+                <Badge variant="secondary" className="text-xs">
+                  padrão
+                </Badge>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {canEdit && (
+          <div className="flex gap-2">
+            <Button variant="ghost" size="icon" onClick={onEdit}>
+              <Edit2 className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={onDelete}>
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
       </div>
+
+      {/* Subcategorias */}
+      {category.subcategories && category.subcategories.length > 0 && (
+        <div className="ml-14 mt-3 space-y-2">
+          {category.subcategories.map((sub) => (
+            <div key={sub.id} className="flex items-center gap-3 text-sm">
+              <CategoryIcon icon={sub.icon} color={sub.color} size={16} />
+              <span className="text-muted-foreground">{sub.name}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
