@@ -24,18 +24,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+
+        // Seed default categories after sign in or sign up
+        if (session && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) {
+          try {
+            await supabase.rpc('seed_default_categories_for_me');
+          } catch (error) {
+            console.error('Erro ao criar categorias padrão:', error);
+          }
+        }
       }
     );
 
     // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+
+      // Seed default categories for existing session
+      if (session) {
+        try {
+          await supabase.rpc('seed_default_categories_for_me');
+        } catch (error) {
+          console.error('Erro ao criar categorias padrão:', error);
+        }
+      }
     });
 
     return () => subscription.unsubscribe();
