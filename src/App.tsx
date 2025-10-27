@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -14,71 +15,83 @@ import Reports from "./pages/Reports";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+function App() {
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 1000 * 60 * 5,
+            retry: 1,
+          },
+        },
+      })
+  );
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <Routes>
-            <Route path="/auth" element={<Auth />} />
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/transactions"
-              element={
-                <ProtectedRoute>
-                  <Transactions />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/categories"
-              element={
-                <ProtectedRoute>
-                  <Categories />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/budget"
-              element={
-                <ProtectedRoute>
-                  <Budget />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/reports"
-              element={
-                <ProtectedRoute>
-                  <Reports />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <Profile />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <Routes>
+              <Route path="/auth" element={<Auth />} />
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/transactions"
+                element={
+                  <ProtectedRoute>
+                    <Transactions />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/categories"
+                element={
+                  <ProtectedRoute>
+                    <Categories />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/budget"
+                element={
+                  <ProtectedRoute>
+                    <Budget />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/reports"
+                element={
+                  <ProtectedRoute>
+                    <Reports />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+}
 
 export default App;
