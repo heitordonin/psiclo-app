@@ -57,15 +57,21 @@ export default function Categories() {
       attemptedSeedRef.current = true;
       
       const backfillCategories = async () => {
-        const { error } = await supabase.rpc('seed_default_categories_for_me');
+        const { data, error } = await supabase.rpc('seed_default_categories_for_me');
         
         if (error) {
           console.error('Erro ao adicionar categorias padrão:', error);
           toast.error('Erro ao carregar categorias padrão. Recarregue a página.');
           attemptedSeedRef.current = false;
         } else {
-          // Recarregar silenciosamente - categorias aparecem naturalmente
-          await queryClient.invalidateQueries({ queryKey: ['categories'] });
+          // data é INTEGER = quantos registros realmente inseriu
+          if (typeof data === 'number' && data > 0) {
+            console.log(`✅ ${data} categorias padrão adicionadas`);
+            await queryClient.invalidateQueries({ queryKey: ['categories'] });
+          } else {
+            // data === 0 significa que já existiam (idempotente)
+            console.log('ℹ️ Categorias padrão já existem');
+          }
         }
       };
       
