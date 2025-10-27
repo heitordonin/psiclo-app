@@ -209,6 +209,7 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: undefined
       }
+      seed_default_categories_for_me: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never

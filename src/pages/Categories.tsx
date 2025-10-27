@@ -1,9 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory } from "@/hooks/useCategories";
 import { BottomNav } from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,6 +28,7 @@ type Category = Database["public"]["Tables"]["budget_categories"]["Row"];
 
 export default function Categories() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { data: categories, isLoading } = useCategories("all");
   const createMutation = useCreateCategory();
   const updateMutation = useUpdateCategory();
@@ -43,6 +47,22 @@ export default function Categories() {
   // Separar categorias padrão e personalizadas
   const defaultCategories = categories?.filter(c => c.is_default) || [];
   const customCategories = categories?.filter(c => !c.is_default) || [];
+
+  // Auto-backfill: popular categorias padrão se não existirem
+  useEffect(() => {
+    if (!isLoading && defaultCategories.length === 0) {
+      const backfillCategories = async () => {
+        try {
+          await supabase.rpc('seed_default_categories_for_me');
+          queryClient.invalidateQueries({ queryKey: ['categories'] });
+          toast.success('Categorias padrão adicionadas');
+        } catch (error) {
+          console.error('Erro ao adicionar categorias padrão:', error);
+        }
+      };
+      backfillCategories();
+    }
+  }, [isLoading, defaultCategories.length, queryClient]);
 
   const handleCreate = () => {
     setModalState({ isOpen: true, category: undefined });
