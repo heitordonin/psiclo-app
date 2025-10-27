@@ -1,325 +1,244 @@
-import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
-import { useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory } from "@/hooks/useCategories";
-import { BottomNav } from "@/components/BottomNav";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
-import { useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import React, { useMemo, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+
+// Ajuste este import para onde você cria o client do Supabase no seu app:
+import { supabase } from '@/lib/supabaseClient';
+
+// Adapter que eu adicionei no PR #3
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { CategoryModal } from "@/components/categories/CategoryModal";
-import { CategoryIcon } from "@/components/categories/CategoryIcon";
-import { Plus, Trash2, Edit2, ArrowLeft } from "lucide-react";
-import { useSwipeable } from "react-swipeable";
-import type { Database } from "@/integrations/supabase/types";
-import type { CategoryFormData } from "@/lib/validations/transaction";
+  listCategoriesAll,
+  createUserCategory,
+  updateUserCategory,
+  deleteUserCategory,
+} from '@/integrations/supabase/categoriesAllAdapter';
 
-type Category = Database["public"]["Tables"]["budget_categories"]["Row"];
+// Tipagem simples (pode usar seus tipos do Supabase se preferir)
+type Kind = 'receita' | 'despesa' | 'transferencia';
 
-export default function Categories() {
-  const navigate = useNavigate();
+type CategoryRow = {
+  id: string;
+  user_id: string | null;
+  name: string;
+  kind: Kind;
+  sort_order: number;
+  locked: boolean;       // true = padrão (template), false = do usuário
+  source: 'template' | 'user';
+};
+
+export default function CategoriesPage() {
   const queryClient = useQueryClient();
-  const { data: categories, isLoading } = useCategories("all");
-  const createMutation = useCreateCategory();
-  const updateMutation = useUpdateCategory();
-  const deleteMutation = useDeleteCategory();
 
-  const [modalState, setModalState] = useState<{
-    isOpen: boolean;
-    category?: Category;
-  }>({ isOpen: false });
+  // Inputs simples pra criar/editar
+  const [newName, setNewName] = useState('');
+  const [newKind, setNewKind] = useState<Kind>('receita');
 
-  const [deleteDialog, setDeleteDialog] = useState<{
-    isOpen: boolean;
-    category?: Category;
-  }>({ isOpen: false });
+  // Carregar tudo da view unificada
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ['categories_all'],
+    queryFn: async () => {
+      const rows = (await listCategoriesAll(supabase)) as CategoryRow[];
+      return rows;
+    },
+    staleTime: 30_000,
+  });
 
-  // Separar categorias padrão e personalizadas
-  const defaultCategories = categories?.filter(c => c.is_default) || [];
-  const customCategories = categories?.filter(c => !c.is_default) || [];
+  const categories = data ?? [];
 
-  // Ref para evitar múltiplas tentativas de backfill
-  const attemptedSeedRef = useRef(false);
+  const receitas = useMemo(
+    () => categories.filter((c) => c.kind === 'receita'),
+    [categories],
+  );
+  const despesas = useMemo(
+    () => categories.filter((c) => c.kind === 'despesa'),
+    [categories],
+  );
+  const transfer = useMemo(
+    () => categories.filter((c) => c.kind === 'transferencia'),
+    [categories],
+  );
 
-  // Auto-backfill: popular categorias padrão se não existirem (silencioso)
-  useEffect(() => {
-    if (!isLoading && defaultCategories.length === 0 && !attemptedSeedRef.current) {
-      attemptedSeedRef.current = true;
-      
-      const backfillCategories = async () => {
-        const { data, error } = await supabase.rpc('seed_default_categories_for_me');
-        
-        if (error) {
-          console.error('Erro ao adicionar categorias padrão:', error);
-          toast.error('Erro ao carregar categorias padrão. Recarregue a página.');
-          attemptedSeedRef.current = false;
-        } else {
-          // data é INTEGER = quantos registros realmente inseriu
-          if (typeof data === 'number' && data > 0) {
-            console.log(`✅ ${data} categorias padrão adicionadas`);
-            await queryClient.invalidateQueries({ queryKey: ['categories'] });
-          } else {
-            // data === 0 significa que já existiam (idempotente)
-            console.log('ℹ️ Categorias padrão já existem');
-          }
-        }
-      };
-      
-      backfillCategories();
-    }
-  }, [isLoading, defaultCategories.length, queryClient]);
-
-  const handleCreate = () => {
-    setModalState({ isOpen: true, category: undefined });
-  };
-
-  const handleEdit = (category: Category) => {
-    if (category.is_default) {
-      return; // Não permite editar categorias padrão
-    }
-    setModalState({ isOpen: true, category });
-  };
-
-  const handleDeleteClick = (category: Category) => {
-    if (category.is_default) {
-      return; // Não permite deletar categorias padrão
-    }
-    setDeleteDialog({ isOpen: true, category });
-  };
-
-  const handleConfirmDelete = async () => {
-    if (deleteDialog.category) {
-      await deleteMutation.mutateAsync(deleteDialog.category.id);
-      setDeleteDialog({ isOpen: false, category: undefined });
-    }
-  };
-
-  const handleSubmit = async (data: CategoryFormData) => {
-    if (modalState.category) {
-      await updateMutation.mutateAsync({
-        id: modalState.category.id,
-        ...data,
+  async function handleCreate() {
+    try {
+      if (!newName.trim()) {
+        toast.error('Informe um nome');
+        return;
+      }
+      await createUserCategory(supabase, {
+        name: newName.trim(),
+        kind: newKind,
+        sort_order: 0,
       });
-    } else {
-      await createMutation.mutateAsync(data);
+      setNewName('');
+      await queryClient.invalidateQueries({ queryKey: ['categories_all'] });
+      toast.success('Categoria criada');
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message ?? 'Erro ao criar categoria');
     }
-  };
+  }
+
+  async function handleRename(row: CategoryRow) {
+    if (row.locked) {
+      toast.info('Categorias padrão não podem ser editadas.');
+      return;
+    }
+    const name = prompt('Novo nome da categoria:', row.name);
+    if (!name || !name.trim()) return;
+
+    try {
+      await updateUserCategory(supabase, row.id, { name: name.trim() });
+      await queryClient.invalidateQueries({ queryKey: ['categories_all'] });
+      toast.success('Categoria atualizada');
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message ?? 'Erro ao atualizar');
+    }
+  }
+
+  async function handleDelete(row: CategoryRow) {
+    if (row.locked) {
+      toast.info('Categorias padrão não podem ser excluídas.');
+      return;
+    }
+    const ok = confirm(`Excluir a categoria "${row.name}"?`);
+    if (!ok) return;
+
+    try {
+      await deleteUserCategory(supabase, row.id);
+      await queryClient.invalidateQueries({ queryKey: ['categories_all'] });
+      toast.success('Categoria excluída');
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message ?? 'Erro ao excluir');
+    }
+  }
+
+  if (isLoading) return <div>Carregando categorias...</div>;
+  if (isError) return <div>Erro ao carregar. <button onClick={() => refetch()}>Tentar novamente</button></div>;
 
   return (
-    <div className="min-h-screen bg-muted/30 pb-20">
-      {/* Header */}
-      <div className="bg-primary px-4 pb-6 pt-6">
-        <div className="flex items-center gap-3 mb-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate(-1)}
-            className="text-primary-foreground hover:bg-primary-foreground/10"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-2xl font-bold text-primary-foreground">
-            Categorias
-          </h1>
+    <div className="p-6 space-y-8">
+      <h1 className="text-2xl font-semibold">Categorias</h1>
+
+      {/* Criar categoria do usuário */}
+      <div className="flex items-end gap-3">
+        <div className="flex flex-col">
+          <label className="text-sm mb-1">Nome</label>
+          <input
+            className="border rounded p-2 min-w-[240px] bg-background"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            placeholder="Ex.: Marketing, Aluguel, etc."
+          />
         </div>
-        <p className="text-primary-foreground/80 text-sm pl-12">
-          Gerencie suas categorias de receitas e despesas
-        </p>
+        <div className="flex flex-col">
+          <label className="text-sm mb-1">Tipo</label>
+          <select
+            className="border rounded p-2 bg-background"
+            value={newKind}
+            onChange={(e) => setNewKind(e.target.value as Kind)}
+          >
+            <option value="receita">Receita</option>
+            <option value="despesa">Despesa</option>
+            <option value="transferencia">Transferência</option>
+          </select>
+        </div>
+        <button onClick={handleCreate} className="px-4 py-2 rounded bg-primary text-primary-foreground">
+          Adicionar
+        </button>
       </div>
 
-      <div className="space-y-6 px-4 pt-4">
-        {/* Categorias Padrão */}
-        <Card className="border-none shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-base">Categorias Padrão</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {defaultCategories.map((category) => (
-              <CategoryItem
-                key={category.id}
-                category={category}
-                onEdit={handleEdit}
-                onDelete={handleDeleteClick}
-                isDefault
-              />
-            ))}
-          </CardContent>
-        </Card>
-
-        {/* Categorias Personalizadas */}
-        <Card className="border-none shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-base">Minhas Categorias</CardTitle>
-            <Button
-              size="sm"
-              onClick={handleCreate}
-              className="h-8"
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              Adicionar
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {customCategories.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-sm text-muted-foreground mb-3">
-                  Você ainda não criou categorias personalizadas
-                </p>
-                <Button size="sm" onClick={handleCreate}>
-                  <Plus className="h-4 w-4 mr-1" />
-                  Criar primeira categoria
-                </Button>
-              </div>
-            ) : (
-              customCategories.map((category) => (
-                <CategoryItem
-                  key={category.id}
-                  category={category}
-                  onEdit={handleEdit}
-                  onDelete={handleDeleteClick}
-                  isDefault={false}
-                />
-              ))
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* FAB Button */}
-      <Button
-        className="fixed bottom-20 right-4 h-14 w-14 rounded-full shadow-lg"
-        onClick={handleCreate}
-      >
-        <Plus className="h-6 w-6" />
-      </Button>
-
-      {/* Modal de Categoria */}
-      <CategoryModal
-        open={modalState.isOpen}
-        onClose={() => setModalState({ isOpen: false, category: undefined })}
-        category={modalState.category}
-        onSubmit={handleSubmit}
+      {/* Listagens */}
+      <Section
+        title="Receitas"
+        rows={receitas}
+        onRename={handleRename}
+        onDelete={handleDelete}
       />
-
-      {/* Dialog de Confirmação */}
-      <AlertDialog
-        open={deleteDialog.isOpen}
-        onOpenChange={(open) =>
-          !open && setDeleteDialog({ isOpen: false, category: undefined })
-        }
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Excluir categoria?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta ação não pode ser desfeita. A categoria será removida
-              permanentemente.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Excluir
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <BottomNav />
+      <Section
+        title="Despesas"
+        rows={despesas}
+        onRename={handleRename}
+        onDelete={handleDelete}
+      />
+      <Section
+        title="Transferências"
+        rows={transfer}
+        onRename={handleRename}
+        onDelete={handleDelete}
+      />
     </div>
   );
 }
 
-// Componente de item de categoria
-interface CategoryItemProps {
-  category: Category;
-  onEdit: (category: Category) => void;
-  onDelete: (category: Category) => void;
-  isDefault: boolean;
-}
-
-function CategoryItem({ 
-  category, 
-  onEdit, 
-  onDelete, 
-  isDefault 
-}: CategoryItemProps) {
-  const [showActions, setShowActions] = useState(false);
-
-  const handlers = useSwipeable({
-    onSwipedLeft: () => !isDefault && setShowActions(true),
-    onSwipedRight: () => setShowActions(false),
-    trackMouse: false,
-  });
-
+function Section({
+  title,
+  rows,
+  onRename,
+  onDelete,
+}: {
+  title: string;
+  rows: CategoryRow[];
+  onRename: (row: CategoryRow) => void;
+  onDelete: (row: CategoryRow) => void;
+}) {
   return (
-    <div {...handlers} className="relative overflow-hidden">
-      {/* Background de ações */}
-      {showActions && !isDefault && (
-        <div className="absolute inset-0 bg-destructive flex items-center justify-end px-4">
-          <Trash2 className="h-5 w-5 text-destructive-foreground" />
-        </div>
-      )}
-
-      {/* Conteúdo principal */}
-      <div
-        className={`relative bg-background flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-all ${
-          showActions ? "-translate-x-20" : "translate-x-0"
-        }`}
-        onClick={() => !isDefault && onEdit(category)}
-      >
-        <div className="flex items-center gap-3">
-          <CategoryIcon
-            icon={category.icon || "Wallet"}
-            color={category.color || "#059669"}
-            size={20}
-          />
-          <div>
-            <p className="font-medium text-sm">{category.name}</p>
-            <p className="text-xs text-muted-foreground">
-              {category.type === "income" ? "Receita" : "Despesa"}
-            </p>
-          </div>
-        </div>
-
-        {!isDefault && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={(e) => {
-              e.stopPropagation();
-              onEdit(category);
-            }}
-          >
-            <Edit2 className="h-4 w-4" />
-          </Button>
-        )}
+    <div>
+      <h2 className="text-xl font-medium mb-3">{title}</h2>
+      <div className="border rounded-lg overflow-hidden">
+        <table className="w-full text-sm">
+          <thead className="bg-muted">
+            <tr>
+              <th className="text-left p-2">Nome</th>
+              <th className="text-left p-2">Bloqueada</th>
+              <th className="text-right p-2">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 && (
+              <tr>
+                <td className="p-3 text-muted-foreground" colSpan={3}>
+                  Nenhuma categoria
+                </td>
+              </tr>
+            )}
+            {rows.map((row) => {
+              const canEdit = !row.locked;
+              const canDelete = !row.locked;
+              return (
+                <tr key={`${row.source}-${row.id}`} className="border-t">
+                  <td className="p-2 align-middle">
+                    {row.name}
+                    {row.locked && <span className="ml-2 text-xs px-2 py-0.5 rounded bg-muted-foreground/10">padrão</span>}
+                  </td>
+                  <td className="p-2 align-middle">{row.locked ? 'Sim' : 'Não'}</td>
+                  <td className="p-2 align-middle">
+                    <div className="flex gap-2 justify-end">
+                      <button
+                        className="px-2 py-1 border rounded disabled:opacity-50"
+                        onClick={() => onRename(row)}
+                        disabled={!canEdit}
+                        title={row.locked ? 'Categoria padrão não pode ser editada' : 'Editar'}
+                      >
+                        Editar
+                      </button>
+                      <button
+                        className="px-2 py-1 border rounded disabled:opacity-50"
+                        onClick={() => onDelete(row)}
+                        disabled={!canDelete}
+                        title={row.locked ? 'Categoria padrão não pode ser excluída' : 'Excluir'}
+                      >
+                        Excluir
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
-
-      {/* Botão de delete revelado no swipe */}
-      {showActions && !isDefault && (
-        <Button
-          variant="destructive"
-          size="sm"
-          className="absolute right-2 top-1/2 -translate-y-1/2 h-8"
-          onClick={() => onDelete(category)}
-        >
-          Excluir
-        </Button>
-      )}
     </div>
   );
 }
