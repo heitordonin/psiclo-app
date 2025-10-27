@@ -61,6 +61,11 @@ export function useMonthlySpending(month: Date) {
       const start = format(startOfMonth(month), "yyyy-MM-dd");
       const end = format(endOfMonth(month), "yyyy-MM-dd");
 
+      // Buscar todas as categorias para mapear subcategorias
+      const { data: allCategories } = await supabase
+        .from("budget_categories")
+        .select("id, parent_id");
+
       const { data, error } = await supabase
         .from("transactions")
         .select("category_id, amount, type")
@@ -70,8 +75,14 @@ export function useMonthlySpending(month: Date) {
 
       if (error) throw error;
 
+      // Agregar gastos por categoria, somando subcategorias na categoria mãe
       const byCategory = (data || []).reduce((acc, t) => {
-        acc[t.category_id] = (acc[t.category_id] || 0) + t.amount;
+        const category = allCategories?.find(c => c.id === t.category_id);
+        
+        // Se for subcategoria, usar o parent_id como chave, senão usar category_id
+        const categoryKey = category?.parent_id || t.category_id;
+        
+        acc[categoryKey] = (acc[categoryKey] || 0) + t.amount;
         return acc;
       }, {} as Record<string, number>);
 

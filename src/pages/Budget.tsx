@@ -9,7 +9,7 @@ import { BudgetDistributionChart } from "@/components/budget/BudgetDistributionC
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useCategories } from "@/hooks/useCategories";
+import { useParentCategories } from "@/hooks/useCategories";
 import {
   useBudgets,
   useMonthlySpending,
@@ -34,7 +34,7 @@ export default function Budget() {
   const [showQuickSetup, setShowQuickSetup] = useState(false);
 
   // Queries
-  const { data: categories, isLoading: categoriesLoading } = useCategories("expense");
+  const { data: categories, isLoading: categoriesLoading } = useParentCategories("expense");
   const { data: budgets, isLoading: budgetsLoading } = useBudgets(selectedMonth);
   const { data: spending, isLoading: spendingLoading } = useMonthlySpending(selectedMonth);
 

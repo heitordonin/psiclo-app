@@ -40,6 +40,7 @@ export const categorySchema = z.object({
     .string()
     .regex(/^#[0-9A-F]{6}$/i, "Cor inválida")
     .min(1, "Cor é obrigatória"),
+  parent_id: z.string().uuid().optional().nullable(),
 });
 
 export type TransactionFormData = z.infer<typeof transactionSchema>;

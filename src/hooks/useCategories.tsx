@@ -7,6 +7,37 @@ import type { Database } from "@/integrations/supabase/types";
 
 type Category = Database["public"]["Tables"]["budget_categories"]["Row"];
 
+export type CategoryWithSubcategories = Category & {
+  subcategories?: Category[];
+};
+
+export function organizeCategoriesHierarchy(categories: Category[]): {
+  parents: CategoryWithSubcategories[];
+  all: Category[];
+} {
+  const parents = categories.filter(cat => !cat.parent_id);
+  const children = categories.filter(cat => cat.parent_id);
+
+  const parentsWithSubs = parents.map(parent => ({
+    ...parent,
+    subcategories: children.filter(child => child.parent_id === parent.id)
+  }));
+
+  return {
+    parents: parentsWithSubs,
+    all: categories
+  };
+}
+
+export function formatCategoryName(category: Category, allCategories: Category[]): string {
+  if (!category.parent_id) {
+    return category.name;
+  }
+  
+  const parent = allCategories.find(c => c.id === category.parent_id);
+  return parent ? `${parent.name}/${category.name}` : category.name;
+}
+
 export function useCategories(type?: "income" | "expense" | "all") {
   return useQuery({
     queryKey: ["categories", type],
@@ -26,6 +57,28 @@ export function useCategories(type?: "income" | "expense" | "all") {
       return data as Category[];
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+export function useParentCategories(type?: "income" | "expense" | "all") {
+  return useQuery({
+    queryKey: ["parent-categories", type],
+    queryFn: async () => {
+      let query = supabase
+        .from("budget_categories")
+        .select("*")
+        .is("parent_id", null)
+        .order("name");
+
+      if (type && type !== "all") {
+        query = query.eq("type", type);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return data as Category[];
+    },
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -56,6 +109,7 @@ export function useCreateCategory() {
             type: data.type,
             icon: data.icon,
             color: data.color,
+            parent_id: data.parent_id || null,
             user_id: user.id,
             is_default: false,
           },
@@ -84,7 +138,13 @@ export function useUpdateCategory() {
     mutationFn: async ({ id, ...data }: { id: string } & CategoryFormData) => {
       const { error } = await supabase
         .from("budget_categories")
-        .update(data)
+        .update({
+          name: data.name,
+          type: data.type,
+          icon: data.icon,
+          color: data.color,
+          parent_id: data.parent_id || null,
+        })
         .eq("id", id)
         .eq("is_default", false); // Apenas personalizadas podem ser editadas
 
@@ -107,6 +167,18 @@ export function useDeleteCategory() {
 
   return useMutation({
     mutationFn: async (id: string) => {
+      // Verificar se tem subcategorias vinculadas
+      const { count: subcategoryCount } = await supabase
+        .from("budget_categories")
+        .select("*", { count: "exact", head: true })
+        .eq("parent_id", id);
+
+      if (subcategoryCount && subcategoryCount > 0) {
+        throw new Error(
+          `Esta categoria possui ${subcategoryCount} subcategoria(s) vinculada(s) e não pode ser excluída`
+        );
+      }
+
       // Verificar se tem transações vinculadas
       const { count } = await supabase
         .from("transactions")

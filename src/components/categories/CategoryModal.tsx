@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useCategories } from "@/hooks/useCategories";
 import {
   Sheet,
   SheetContent,
@@ -20,6 +21,13 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { IconPicker } from "./IconPicker";
 import { ColorPicker } from "./ColorPicker";
 import { categorySchema, type CategoryFormData } from "@/lib/validations/transaction";
@@ -49,8 +57,12 @@ export function CategoryModal({
       type: "expense",
       icon: "Wallet",
       color: "#059669",
+      parent_id: undefined,
     },
   });
+
+  const watchType = form.watch("type");
+  const { data: parentCategories } = useCategories(watchType);
 
   // Popular form ao editar
   useEffect(() => {
@@ -60,6 +72,7 @@ export function CategoryModal({
         type: category.type as "income" | "expense",
         icon: category.icon || "Wallet",
         color: category.color || "#059669",
+        parent_id: category.parent_id || undefined,
       });
     } else {
       form.reset({
@@ -67,12 +80,17 @@ export function CategoryModal({
         type: "expense",
         icon: "Wallet",
         color: "#059669",
+        parent_id: undefined,
       });
     }
   }, [category, form, open]);
 
   const handleSubmit = (data: CategoryFormData) => {
-    onSubmit(data);
+    const submitData = {
+      ...data,
+      parent_id: data.parent_id === "none" ? null : data.parent_id
+    };
+    onSubmit(submitData);
     onClose();
   };
 
@@ -116,7 +134,10 @@ export function CategoryModal({
                   <FormControl>
                     <RadioGroup
                       value={field.value}
-                      onValueChange={field.onChange}
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        form.setValue("parent_id", undefined);
+                      }}
                       className="grid grid-cols-2 gap-3"
                     >
                       <div>
@@ -147,6 +168,38 @@ export function CategoryModal({
                       </div>
                     </RadioGroup>
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Subcategoria de */}
+            <FormField
+              control={form.control}
+              name="parent_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Subcategoria de</FormLabel>
+                  <Select 
+                    onValueChange={field.onChange} 
+                    value={field.value || "none"}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sem categoria pai" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="none">Sem categoria pai</SelectItem>
+                      {parentCategories
+                        ?.filter(cat => !cat.parent_id && cat.id !== category?.id)
+                        ?.map((cat) => (
+                          <SelectItem key={cat.id} value={cat.id}>
+                            {cat.name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

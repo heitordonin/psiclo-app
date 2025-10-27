@@ -41,7 +41,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { transactionSchema, type TransactionFormData } from "@/lib/validations/transaction";
-import { useCategories } from "@/hooks/useCategories";
+import { useCategories, formatCategoryName } from "@/hooks/useCategories";
 import { useCreateTransaction, useUpdateTransaction } from "@/hooks/useTransactions";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -78,7 +78,14 @@ export function TransactionModal({ open, onClose, transaction, defaultType = 'ex
 
   const watchType = form.watch("type");
   const watchIsRecurring = form.watch("is_recurring");
-  const { data: categories } = useCategories(watchType);
+  const { data: allCategories } = useCategories(watchType);
+
+  // Ordenar: categorias mãe primeiro, depois subcategorias
+  const categories = allCategories ? (() => {
+    const parents = allCategories.filter(c => !c.parent_id);
+    const children = allCategories.filter(c => c.parent_id);
+    return [...parents, ...children];
+  })() : [];
 
   // Populate form when editing
   useEffect(() => {
@@ -289,6 +296,8 @@ export function TransactionModal({ open, onClose, transaction, defaultType = 'ex
                             ? (LucideIcons[category.icon as keyof typeof LucideIcons] as React.ComponentType<{ className?: string }>)
                             : LucideIcons.DollarSign;
                           
+                          const displayName = allCategories ? formatCategoryName(category, allCategories) : category.name;
+                          
                           return (
                             <SelectItem key={category.id} value={category.id}>
                               <div className="flex items-center gap-2">
@@ -298,7 +307,7 @@ export function TransactionModal({ open, onClose, transaction, defaultType = 'ex
                                     style={{ color: category.color || "#059669" }}
                                   />
                                 )}
-                                <span>{category.name}</span>
+                                <span>{displayName}</span>
                               </div>
                             </SelectItem>
                           );
