@@ -91,14 +91,14 @@ export function useCreateCategory() {
     mutationFn: async (data: CategoryFormData) => {
       if (!user) throw new Error("Usuário não autenticado");
 
-      // Verificar limite de categorias (50 total)
+      // Verificar limite de categorias (44 padrão + 50 personalizadas = 94 total)
       const { count } = await supabase
         .from("budget_categories")
         .select("*", { count: "exact", head: true })
         .eq("user_id", user.id);
 
-      if (count && count >= 50) {
-        throw new Error("Você atingiu o limite de 50 categorias");
+      if (count && count >= 94) {
+        throw new Error("Você atingiu o limite de 50 categorias personalizadas");
       }
 
       const { data: category, error } = await supabase
