@@ -2,8 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
-// Ajuste este import para onde você cria o client do Supabase no seu app:
-import { supabase } from '@/lib/supabaseClient';
+import { supabase } from '@/integrations/supabase/client';
 
 // Adapter que eu adicionei no PR #3
 import {
