@@ -86,6 +86,18 @@ export function TransactionItem({ transaction, onEdit, onDelete }: TransactionIt
               {formatShortDate(transaction.transaction_date)}
             </p>
           </div>
+
+          {/* Botão de deletar sempre visível */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(transaction.id);
+            }}
+            className="flex-shrink-0 ml-2 p-2 rounded-full hover:bg-destructive/10 transition-colors group"
+            title="Excluir transação"
+          >
+            <Trash2 className="h-4 w-4 text-muted-foreground group-hover:text-destructive transition-colors" />
+          </button>
         </div>
       </div>
 
