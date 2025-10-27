@@ -51,7 +51,7 @@ export default function Categories() {
   // Ref para evitar múltiplas tentativas de backfill
   const attemptedSeedRef = useRef(false);
 
-  // Auto-backfill: popular categorias padrão se não existirem
+  // Auto-backfill: popular categorias padrão se não existirem (silencioso)
   useEffect(() => {
     if (!isLoading && defaultCategories.length === 0 && !attemptedSeedRef.current) {
       attemptedSeedRef.current = true;
@@ -61,11 +61,11 @@ export default function Categories() {
         
         if (error) {
           console.error('Erro ao adicionar categorias padrão:', error);
-          toast.error(`Erro ao carregar categorias: ${error.message}`);
-          attemptedSeedRef.current = false; // Permitir nova tentativa em caso de erro
+          toast.error('Erro ao carregar categorias padrão. Recarregue a página.');
+          attemptedSeedRef.current = false;
         } else {
+          // Recarregar silenciosamente - categorias aparecem naturalmente
           await queryClient.invalidateQueries({ queryKey: ['categories'] });
-          toast.success('Categorias padrão adicionadas');
         }
       };
       
