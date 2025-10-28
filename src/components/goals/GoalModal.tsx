@@ -18,15 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CurrencyInput } from "@/components/ui/currency-input";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
-import { cn } from "@/lib/utils";
 import type { Database } from "@/integrations/supabase/types";
 
 type FinancialGoal = Database["public"]["Tables"]["financial_goals"]["Row"];
@@ -34,7 +26,10 @@ type FinancialGoal = Database["public"]["Tables"]["financial_goals"]["Row"];
 const goalSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório").max(100),
   target_amount: z.number().min(0.01, "Valor deve ser maior que zero"),
-  target_date: z.date().optional(),
+  target_date: z.string().optional().refine(
+    (date) => !date || new Date(date) > new Date(),
+    { message: "Data deve ser futura" }
+  ),
 });
 
 type GoalFormData = z.infer<typeof goalSchema>;
@@ -43,7 +38,7 @@ interface GoalModalProps {
   goal?: FinancialGoal;
   open: boolean;
   onClose: () => void;
-  onSave: (data: Omit<GoalFormData, "target_date"> & { target_date?: string }) => void;
+  onSave: (data: GoalFormData) => void;
 }
 
 export function GoalModal({ goal, open, onClose, onSave }: GoalModalProps) {
@@ -52,15 +47,12 @@ export function GoalModal({ goal, open, onClose, onSave }: GoalModalProps) {
     defaultValues: {
       name: goal?.name || "",
       target_amount: goal ? Number(goal.target_amount) : 0,
-      target_date: goal?.target_date ? new Date(goal.target_date) : undefined,
+      target_date: goal?.target_date || "",
     },
   });
 
   const handleSubmit = (data: GoalFormData) => {
-    onSave({
-      ...data,
-      target_date: data.target_date ? format(data.target_date, "yyyy-MM-dd") : undefined,
-    });
+    onSave(data);
     form.reset();
     onClose();
   };
@@ -109,41 +101,15 @@ export function GoalModal({ goal, open, onClose, onSave }: GoalModalProps) {
               control={form.control}
               name="target_date"
               render={({ field }) => (
-                <FormItem className="flex flex-col">
+                <FormItem>
                   <FormLabel>Data Alvo (Opcional)</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          {field.value ? (
-                            format(field.value, "dd/MM/yyyy")
-                          ) : (
-                            <span>Selecione uma data</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        disabled={(date) => date < new Date()}
-                        initialFocus
-                        captionLayout="dropdown-buttons"
-                        fromYear={new Date().getFullYear()}
-                        toYear={new Date().getFullYear() + 50}
-                        className="pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
+                  <FormControl>
+                    <Input 
+                      type="date"
+                      min={format(new Date(), "yyyy-MM-dd")}
+                      {...field}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
