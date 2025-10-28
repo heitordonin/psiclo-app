@@ -33,7 +33,6 @@ export function GoalCard({ goal, onClick }: GoalCardProps) {
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-sm truncate">{goal.name}</h3>
-          <p className="text-xs text-muted-foreground capitalize">{goal.goal_type}</p>
         </div>
       </div>
 

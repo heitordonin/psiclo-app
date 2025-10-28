@@ -73,13 +73,15 @@ export default function GoalDetails() {
 
   const handleUpdateGoal = (data: {
     name: string;
-    goal_type: string;
     target_amount: number;
     target_date?: string;
   }) => {
     updateGoal.mutate({
       id: id!,
-      updates: data,
+      updates: {
+        ...data,
+        goal_type: 'custom',
+      },
     });
   };
 
@@ -152,7 +154,6 @@ export default function GoalDetails() {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-          <p className="text-sm text-primary-foreground/80 capitalize">{goal.goal_type}</p>
         </div>
       </div>
 

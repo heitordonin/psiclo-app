@@ -18,13 +18,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CurrencyInput } from "@/components/ui/currency-input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
@@ -40,7 +33,6 @@ type FinancialGoal = Database["public"]["Tables"]["financial_goals"]["Row"];
 
 const goalSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório").max(100),
-  goal_type: z.string().min(1, "Tipo é obrigatório"),
   target_amount: z.number().min(0.01, "Valor deve ser maior que zero"),
   target_date: z.date().optional(),
 });
@@ -54,21 +46,11 @@ interface GoalModalProps {
   onSave: (data: Omit<GoalFormData, "target_date"> & { target_date?: string }) => void;
 }
 
-const goalTypes = [
-  { value: "aposentadoria", label: "Aposentadoria" },
-  { value: "reserva", label: "Reserva de Emergência" },
-  { value: "viagem", label: "Viagem" },
-  { value: "compra", label: "Compra" },
-  { value: "investimento", label: "Investimento" },
-  { value: "outro", label: "Outro" },
-];
-
 export function GoalModal({ goal, open, onClose, onSave }: GoalModalProps) {
   const form = useForm<GoalFormData>({
     resolver: zodResolver(goalSchema),
     defaultValues: {
       name: goal?.name || "",
-      goal_type: goal?.goal_type || "",
       target_amount: goal ? Number(goal.target_amount) : 0,
       target_date: goal?.target_date ? new Date(goal.target_date) : undefined,
     },
@@ -101,31 +83,6 @@ export function GoalModal({ goal, open, onClose, onSave }: GoalModalProps) {
                   <FormControl>
                     <Input placeholder="Ex: Férias 2026" {...field} />
                   </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="goal_type"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Tipo</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o tipo" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {goalTypes.map((type) => (
-                        <SelectItem key={type.value} value={type.value}>
-                          {type.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

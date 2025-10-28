@@ -38,7 +38,7 @@ export function useCreateFinancialGoal() {
         .from("financial_goals")
         .insert({
           name: goal.name,
-          goal_type: goal.goal_type,
+          goal_type: 'custom',
           target_amount: goal.target_amount,
           target_date: goal.target_date,
           user_id: userData.user?.id,

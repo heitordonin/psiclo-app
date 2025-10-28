@@ -103,7 +103,7 @@ export type Database = {
         Row: {
           created_at: string | null
           current_amount: number | null
-          goal_type: string
+          goal_type: string | null
           id: string
           name: string
           target_amount: number
@@ -113,7 +113,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           current_amount?: number | null
-          goal_type: string
+          goal_type?: string | null
           id?: string
           name: string
           target_amount: number
@@ -123,7 +123,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           current_amount?: number | null
-          goal_type?: string
+          goal_type?: string | null
           id?: string
           name?: string
           target_amount?: number
