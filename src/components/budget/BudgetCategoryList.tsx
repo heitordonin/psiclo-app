@@ -10,12 +10,10 @@ interface CategoryWithBudget extends Category {
 
 interface BudgetCategoryListProps {
   categories: CategoryWithBudget[];
-  onEditBudget: (category: CategoryWithBudget) => void;
 }
 
 export function BudgetCategoryList({
   categories,
-  onEditBudget,
 }: BudgetCategoryListProps) {
   if (!categories || categories.length === 0) {
     return (
@@ -54,7 +52,6 @@ export function BudgetCategoryList({
           category={category}
           budget={category.budget}
           spent={category.spent}
-          onEdit={() => onEditBudget(category)}
         />
       ))}
     </div>

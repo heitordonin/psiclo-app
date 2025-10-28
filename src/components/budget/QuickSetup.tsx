@@ -19,6 +19,7 @@ type Category = Database["public"]["Tables"]["budget_categories"]["Row"];
 
 interface QuickSetupProps {
   categories: Category[];
+  currentBudgets?: Record<string, number>;
   onComplete: (budgets: Record<string, number>) => void;
   onClose: () => void;
   isSaving?: boolean;
@@ -26,12 +27,20 @@ interface QuickSetupProps {
 
 export function QuickSetup({
   categories,
+  currentBudgets,
   onComplete,
   onClose,
   isSaving = false,
 }: QuickSetupProps) {
-  const [totalBudget, setTotalBudget] = useState<number>(0);
-  const [budgets, setBudgets] = useState<Record<string, number>>({});
+  const initialTotal = useMemo(() => {
+    if (!currentBudgets) return 0;
+    return Object.values(currentBudgets).reduce((sum, val) => sum + val, 0);
+  }, [currentBudgets]);
+
+  const [totalBudget, setTotalBudget] = useState<number>(initialTotal);
+  const [budgets, setBudgets] = useState<Record<string, number>>(
+    currentBudgets || {}
+  );
 
   const currentTotal = useMemo(() => {
     return Object.values(budgets).reduce((sum, val) => sum + (val || 0), 0);
@@ -68,9 +77,9 @@ export function QuickSetup({
     <Sheet open onOpenChange={onClose}>
       <SheetContent className="w-full sm:max-w-lg flex flex-col">
         <SheetHeader>
-          <SheetTitle>Configuração Rápida de Orçamento</SheetTitle>
+          <SheetTitle>Configuração de Orçamento</SheetTitle>
           <SheetDescription>
-            Defina rapidamente o orçamento para todas as categorias
+            Defina o orçamento total e distribua entre as categorias
           </SheetDescription>
         </SheetHeader>
 

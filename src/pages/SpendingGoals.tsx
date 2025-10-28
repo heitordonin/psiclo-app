@@ -1,9 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { BottomNav } from "@/components/BottomNav";
 import { MonthPicker } from "@/components/budget/MonthPicker";
 import { BudgetSummary } from "@/components/budget/BudgetSummary";
 import { BudgetCategoryList } from "@/components/budget/BudgetCategoryList";
-import { BudgetEditModal } from "@/components/budget/BudgetEditModal";
 import { QuickSetup } from "@/components/budget/QuickSetup";
 import { BudgetDistributionChart } from "@/components/budget/BudgetDistributionChart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,7 +29,6 @@ interface CategoryWithBudget extends Category {
 
 export default function Budget() {
   const [selectedMonth, setSelectedMonth] = useState(new Date());
-  const [editingCategory, setEditingCategory] = useState<CategoryWithBudget | null>(null);
   const [showQuickSetup, setShowQuickSetup] = useState(false);
 
   // Queries
@@ -55,6 +53,15 @@ export default function Budget() {
         budgets?.items.find((b) => b.category_id === cat.id)?.planned_amount || 0,
       spent: spending?.byCategory[cat.id] || 0,
     })) || [];
+
+  // Criar mapa de budgets atuais para passar ao QuickSetup
+  const currentBudgets = useMemo(() => {
+    const map: Record<string, number> = {};
+    budgets?.items.forEach((budget) => {
+      map[budget.category_id] = budget.planned_amount;
+    });
+    return map;
+  }, [budgets]);
 
   // Sistema de alertas
   useEffect(() => {
@@ -87,21 +94,6 @@ export default function Budget() {
   }, [budgets, spending, selectedMonth]);
 
   // Handlers
-  const handleEditBudget = (category: CategoryWithBudget) => {
-    setEditingCategory(category);
-  };
-
-  const handleSaveBudget = async (amount: number) => {
-    if (!editingCategory) return;
-
-    await setBudget.mutateAsync({
-      categoryId: editingCategory.id,
-      month: selectedMonth,
-      amount,
-    });
-    setEditingCategory(null);
-  };
-
   const handleQuickSetupComplete = async (budgetsData: Record<string, number>) => {
     try {
       await Promise.all(
@@ -196,13 +188,12 @@ export default function Budget() {
                   onClick={() => setShowQuickSetup(true)}
                 >
                   <Settings className="h-4 w-4 mr-2" />
-                  Configuração Rápida
+                  Configuração
                 </Button>
               </div>
 
               <BudgetCategoryList
                 categories={categoriesWithBudget}
-                onEditBudget={handleEditBudget}
               />
             </div>
           </>
@@ -210,20 +201,10 @@ export default function Budget() {
       </div>
 
       {/* Modals */}
-      {editingCategory && (
-        <BudgetEditModal
-          category={editingCategory}
-          month={selectedMonth}
-          currentBudget={editingCategory.budget}
-          onSave={handleSaveBudget}
-          onClose={() => setEditingCategory(null)}
-          isSaving={setBudget.isPending}
-        />
-      )}
-
       {showQuickSetup && categories && (
         <QuickSetup
           categories={categories}
+          currentBudgets={currentBudgets}
           onComplete={handleQuickSetupComplete}
           onClose={() => setShowQuickSetup(false)}
           isSaving={setBudget.isPending}
