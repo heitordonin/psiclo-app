@@ -99,6 +99,135 @@ export type Database = {
           },
         ]
       }
+      financial_diagnoses: {
+        Row: {
+          condominium: number | null
+          created_at: string | null
+          credit_card_balance: number | null
+          credit_card_payment: number | null
+          delivery: number | null
+          education: number | null
+          electricity: number | null
+          gifts: number | null
+          groceries: number | null
+          gym: number | null
+          health_insurance: number | null
+          home_financing_balance: number | null
+          home_financing_payment: number | null
+          id: string
+          insurance: number | null
+          internet_tv: number | null
+          leisure: number | null
+          mobile_phone: number | null
+          other_debts_balance: number | null
+          other_debts_payment: number | null
+          other_fixed_expenses: number | null
+          other_income: number | null
+          other_variable_expenses: number | null
+          overdraft_balance: number | null
+          overdraft_payment: number | null
+          personal_care: number | null
+          personal_loan_balance: number | null
+          personal_loan_payment: number | null
+          personal_shopping: number | null
+          pharmacy: number | null
+          rent: number | null
+          salary: number | null
+          subscriptions: number | null
+          transportation: number | null
+          travel: number | null
+          updated_at: string | null
+          user_id: string
+          vehicle_financing_balance: number | null
+          vehicle_financing_payment: number | null
+          water: number | null
+        }
+        Insert: {
+          condominium?: number | null
+          created_at?: string | null
+          credit_card_balance?: number | null
+          credit_card_payment?: number | null
+          delivery?: number | null
+          education?: number | null
+          electricity?: number | null
+          gifts?: number | null
+          groceries?: number | null
+          gym?: number | null
+          health_insurance?: number | null
+          home_financing_balance?: number | null
+          home_financing_payment?: number | null
+          id?: string
+          insurance?: number | null
+          internet_tv?: number | null
+          leisure?: number | null
+          mobile_phone?: number | null
+          other_debts_balance?: number | null
+          other_debts_payment?: number | null
+          other_fixed_expenses?: number | null
+          other_income?: number | null
+          other_variable_expenses?: number | null
+          overdraft_balance?: number | null
+          overdraft_payment?: number | null
+          personal_care?: number | null
+          personal_loan_balance?: number | null
+          personal_loan_payment?: number | null
+          personal_shopping?: number | null
+          pharmacy?: number | null
+          rent?: number | null
+          salary?: number | null
+          subscriptions?: number | null
+          transportation?: number | null
+          travel?: number | null
+          updated_at?: string | null
+          user_id: string
+          vehicle_financing_balance?: number | null
+          vehicle_financing_payment?: number | null
+          water?: number | null
+        }
+        Update: {
+          condominium?: number | null
+          created_at?: string | null
+          credit_card_balance?: number | null
+          credit_card_payment?: number | null
+          delivery?: number | null
+          education?: number | null
+          electricity?: number | null
+          gifts?: number | null
+          groceries?: number | null
+          gym?: number | null
+          health_insurance?: number | null
+          home_financing_balance?: number | null
+          home_financing_payment?: number | null
+          id?: string
+          insurance?: number | null
+          internet_tv?: number | null
+          leisure?: number | null
+          mobile_phone?: number | null
+          other_debts_balance?: number | null
+          other_debts_payment?: number | null
+          other_fixed_expenses?: number | null
+          other_income?: number | null
+          other_variable_expenses?: number | null
+          overdraft_balance?: number | null
+          overdraft_payment?: number | null
+          personal_care?: number | null
+          personal_loan_balance?: number | null
+          personal_loan_payment?: number | null
+          personal_shopping?: number | null
+          pharmacy?: number | null
+          rent?: number | null
+          salary?: number | null
+          subscriptions?: number | null
+          transportation?: number | null
+          travel?: number | null
+          updated_at?: string | null
+          user_id?: string
+          vehicle_financing_balance?: number | null
+          vehicle_financing_payment?: number | null
+          water?: number | null
+        }
+        Relationships: []
+      }
       financial_goals: {
         Row: {
           created_at: string | null

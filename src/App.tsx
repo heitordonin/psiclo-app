@@ -15,6 +15,7 @@ import Goals from "./pages/Goals";
 import GoalDetails from "./pages/GoalDetails";
 import Reports from "./pages/Reports";
 import Profile from "./pages/Profile";
+import FinancialDiagnosis from "./pages/FinancialDiagnosis";
 import NotFound from "./pages/NotFound";
 
 function App() {
@@ -100,6 +101,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Profile />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/financial-diagnosis"
+                element={
+                  <ProtectedRoute>
+                    <FinancialDiagnosis />
                   </ProtectedRoute>
                 }
               />
