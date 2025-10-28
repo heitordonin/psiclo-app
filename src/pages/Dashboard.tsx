@@ -5,6 +5,7 @@ import { MetricCard } from "@/components/dashboard/MetricCard";
 import { WeeklyChart } from "@/components/dashboard/WeeklyChart";
 import { RecentTransactions } from "@/components/dashboard/RecentTransactions";
 import { QuickActions } from "@/components/dashboard/QuickActions";
+import { BudgetOverview } from "@/components/dashboard/BudgetOverview";
 import { TrendingUp, ArrowUpIcon, ArrowDownIcon } from "lucide-react";
 
 export default function Dashboard() {
@@ -56,6 +57,11 @@ export default function Dashboard() {
       {/* Quick Actions */}
       <div className="mt-4">
         <QuickActions />
+      </div>
+
+      {/* Resumo do Orçamento */}
+      <div className="px-4 mt-4">
+        <BudgetOverview />
       </div>
 
       {/* Gráfico Semanal */}
