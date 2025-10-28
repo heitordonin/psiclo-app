@@ -61,10 +61,16 @@ export function useMonthlySpending(month: Date) {
       const start = format(startOfMonth(month), "yyyy-MM-dd");
       const end = format(endOfMonth(month), "yyyy-MM-dd");
 
-      // Buscar todas as categorias para mapear subcategorias
-      const { data: allCategories } = await supabase
+      // Buscar todas as categorias do usuário para mapear subcategorias
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData?.user) throw new Error("Usuário não autenticado");
+
+      const { data: allCategories, error: categoriesError } = await supabase
         .from("budget_categories")
-        .select("id, parent_id");
+        .select("id, parent_id")
+        .eq("user_id", userData.user.id);
+
+      if (categoriesError) throw categoriesError;
 
       const { data, error } = await supabase
         .from("transactions")
@@ -145,6 +151,20 @@ export function useBudgetSuggestions(categoryId: string) {
   return useQuery<BudgetSuggestions>({
     queryKey: ["budget-suggestions", categoryId],
     queryFn: async () => {
+      // Buscar todas as categorias para identificar subcategorias
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData?.user) throw new Error("Usuário não autenticado");
+
+      const { data: allCategories } = await supabase
+        .from("budget_categories")
+        .select("id, parent_id")
+        .eq("user_id", userData.user.id);
+
+      // Encontrar todas as categorias relacionadas (a categoria + suas filhas)
+      const categoryIds = [categoryId];
+      const subcategories = allCategories?.filter(c => c.parent_id === categoryId) || [];
+      categoryIds.push(...subcategories.map(c => c.id));
+
       const months = [1, 2, 3].map((i) => subMonths(new Date(), i));
 
       const spending = await Promise.all(
@@ -155,7 +175,7 @@ export function useBudgetSuggestions(categoryId: string) {
           const { data } = await supabase
             .from("transactions")
             .select("amount")
-            .eq("category_id", categoryId)
+            .in("category_id", categoryIds) // Buscar pela categoria E subcategorias
             .gte("transaction_date", start)
             .lte("transaction_date", end)
             .eq("type", "expense");
