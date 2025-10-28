@@ -44,6 +44,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -365,47 +366,49 @@ export function TransactionModal({ open, onClose, transaction, defaultType = 'ex
                         </FormControl>
                       </PopoverTrigger>
                       <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                        <Command>
-                          <CommandInput placeholder="Buscar categoria..." />
-                          <CommandList>
-                            <CommandEmpty>Nenhuma categoria encontrada.</CommandEmpty>
-                            <CommandGroup>
-                              {categories?.map((category) => {
-                                const IconComponent = category.icon
-                                  ? (LucideIcons[category.icon as keyof typeof LucideIcons] as React.ComponentType<{ className?: string }>)
-                                  : LucideIcons.DollarSign;
-                                
-                                const displayName = allCategories ? formatCategoryName(category, allCategories) : category.name;
-                                
-                                return (
-                                  <CommandItem
-                                    key={category.id}
-                                    value={`${category.name} ${displayName}`}
-                                    onSelect={() => {
-                                      form.setValue("category_id", category.id);
-                                    }}
-                                  >
-                                    <Check
-                                      className={cn(
-                                        "mr-2 h-4 w-4",
-                                        category.id === field.value ? "opacity-100" : "opacity-0"
-                                      )}
-                                    />
-                                    {IconComponent && (
-                                      <IconComponent
-                                        className="mr-2 h-4 w-4"
-                                        style={{ color: category.color || "#059669" }}
-                                      />
-                                    )}
-                                    <span className={category.parent_id ? "ml-4 text-sm" : ""}>
-                                      {displayName}
-                                    </span>
-                                  </CommandItem>
-                                );
-                              })}
-                            </CommandGroup>
-                          </CommandList>
-                        </Command>
+            <Command>
+              <CommandInput placeholder="Buscar categoria..." />
+              <CommandList className="max-h-[300px] p-0">
+                <ScrollArea className="h-[300px]">
+                  <CommandEmpty>Nenhuma categoria encontrada.</CommandEmpty>
+                  <CommandGroup>
+                    {categories?.map((category) => {
+                      const IconComponent = category.icon
+                        ? (LucideIcons[category.icon as keyof typeof LucideIcons] as React.ComponentType<{ className?: string }>)
+                        : LucideIcons.DollarSign;
+                      
+                      const displayName = allCategories ? formatCategoryName(category, allCategories) : category.name;
+                      
+                      return (
+                        <CommandItem
+                          key={category.id}
+                          value={`${category.name} ${displayName}`}
+                          onSelect={() => {
+                            form.setValue("category_id", category.id);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              category.id === field.value ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          {IconComponent && (
+                            <IconComponent
+                              className="mr-2 h-4 w-4"
+                              style={{ color: category.color || "#059669" }}
+                            />
+                          )}
+                          <span className={category.parent_id ? "ml-4 text-sm" : ""}>
+                            {displayName}
+                          </span>
+                        </CommandItem>
+                      );
+                    })}
+                  </CommandGroup>
+                </ScrollArea>
+              </CommandList>
+            </Command>
                       </PopoverContent>
                     </Popover>
                     
