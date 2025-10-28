@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Edit2, Trash2, AlertCircle } from "lucide-react";
+import { Plus, Edit2, Trash2, AlertCircle, Download } from "lucide-react";
 import {
   useCategories,
   useCreateCategory,
@@ -27,11 +27,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import { CategoryIcon } from "@/components/categories/CategoryIcon";
 import { CategoryModal } from "@/components/categories/CategoryModal";
+import { BulkImportModal } from "@/components/categories/BulkImportModal";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function CategoriesPage() {
   const [selectedTab, setSelectedTab] = useState<"income" | "expense">("expense");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | undefined>();
   const [deletingCategory, setDeletingCategory] = useState<Category | undefined>();
 
@@ -136,14 +138,24 @@ export default function CategoriesPage() {
       <div className="bg-primary text-primary-foreground p-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Categorias</h1>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setIsModalOpen(true)}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Nova Categoria
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsImportModalOpen(true)}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Importar
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setIsModalOpen(true)}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Nova Categoria
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -197,6 +209,11 @@ export default function CategoriesPage() {
         onClose={handleModalClose}
         category={editingCategory}
         onSubmit={editingCategory ? handleUpdate : handleCreate}
+      />
+
+      <BulkImportModal
+        open={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
       />
 
       <AlertDialog open={!!deletingCategory} onOpenChange={() => setDeletingCategory(undefined)}>
