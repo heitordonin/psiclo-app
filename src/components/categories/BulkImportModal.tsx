@@ -34,12 +34,13 @@ interface ParsedRow {
   error?: string;
 }
 
-const EXAMPLE_TEMPLATE = `Nome	Tipo	Ícone	Cor	Categoria Pai
-Alimentação	expense	Utensils	#EF4444	
-Restaurante	expense	Store	#EF4444	Alimentação
-iFood	expense	Bike	#EF4444	Alimentação
-Transporte	expense	Car	#3B82F6	
-Uber	expense	Car	#3B82F6	Transporte`;
+const EXAMPLE_TEMPLATE = `Nome	Tipo	Subcategoria de
+Alimentação	expense	
+Restaurante	expense	Alimentação
+iFood	expense	Alimentação
+Transporte	expense	
+Uber	expense	Transporte
+Salário	income	`;
 
 export function BulkImportModal({ open, onClose }: BulkImportModalProps) {
   const [inputText, setInputText] = useState("");
@@ -73,9 +74,9 @@ export function BulkImportModal({ open, onClose }: BulkImportModalProps) {
       const row = {
         name: values[0] || "",
         type: (values[1]?.toLowerCase() === "income" ? "income" : "expense") as "income" | "expense",
-        icon: values[2] || "Wallet",
-        color: values[3] || "#059669",
-        parent_name: values[4] || null,
+        icon: "DollarSign",
+        color: "#059669",
+        parent_name: values[2] || null,
         valid: false,
         error: undefined as string | undefined,
       };
@@ -88,11 +89,6 @@ export function BulkImportModal({ open, onClose }: BulkImportModalProps) {
 
       if (row.name.length > 30) {
         row.error = "Nome deve ter no máximo 30 caracteres";
-        return row;
-      }
-
-      if (!row.color.match(/^#[0-9A-F]{6}$/i)) {
-        row.error = "Cor inválida (use formato #RRGGBB)";
         return row;
       }
 
@@ -225,7 +221,11 @@ export function BulkImportModal({ open, onClose }: BulkImportModalProps) {
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              <strong>Formato esperado:</strong> Nome | Tipo (income/expense) | Ícone | Cor (#RRGGBB) | Categoria Pai (opcional)
+              <strong>Formato esperado:</strong> Nome | Tipo (income/expense) | Subcategoria de (opcional)
+              <br />
+              <span className="text-xs text-muted-foreground">
+                Ícone e cor serão definidos automaticamente (você pode editar depois)
+              </span>
               <Button
                 variant="link"
                 size="sm"
