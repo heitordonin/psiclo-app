@@ -111,12 +111,15 @@ export function useSetBudget() {
 
       const monthStr = format(startOfMonth(month), "yyyy-MM-dd");
 
-      const { error } = await supabase.from("budgets").upsert({
-        category_id: categoryId,
-        month: monthStr,
-        planned_amount: amount,
-        user_id: userData.user?.id,
-      });
+      const { error } = await supabase.from("budgets").upsert(
+        {
+          category_id: categoryId,
+          month: monthStr,
+          planned_amount: amount,
+          user_id: userData.user?.id,
+        },
+        { onConflict: 'user_id,category_id,month' }
+      );
 
       if (error) throw error;
     },
@@ -211,7 +214,7 @@ export function useCopyBudget() {
 
       const { error: insertError } = await supabase
         .from("budgets")
-        .upsert(insertData);
+        .upsert(insertData, { onConflict: 'user_id,category_id,month' });
 
       if (insertError) throw insertError;
 
