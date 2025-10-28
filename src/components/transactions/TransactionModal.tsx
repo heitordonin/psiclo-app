@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router-dom";
 import { format, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, TrendingUp, TrendingDown, Settings } from "lucide-react";
+import { CalendarIcon, TrendingUp, TrendingDown, Settings, Check, ChevronsUpDown } from "lucide-react";
 import * as LucideIcons from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -31,6 +31,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import {
   Popover,
   PopoverContent,
@@ -80,12 +88,48 @@ export function TransactionModal({ open, onClose, transaction, defaultType = 'ex
   const watchIsRecurring = form.watch("is_recurring");
   const { data: allCategories } = useCategories(watchType);
 
-  // Ordenar: categorias mãe primeiro, depois subcategorias
+  // Ordenar alfabeticamente: categorias mãe e suas subcategorias
   const categories = allCategories ? (() => {
-    const parents = allCategories.filter(c => !c.parent_id);
-    const children = allCategories.filter(c => c.parent_id);
-    return [...parents, ...children];
+    // Separar e ordenar alfabeticamente
+    const parents = allCategories
+      .filter(c => !c.parent_id)
+      .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+    
+    const children = allCategories
+      .filter(c => c.parent_id)
+      .sort((a, b) => {
+        // Encontrar os pais
+        const parentA = allCategories.find(p => p.id === a.parent_id);
+        const parentB = allCategories.find(p => p.id === b.parent_id);
+        
+        // Ordenar primeiro por nome do pai, depois por nome da subcategoria
+        const parentCompare = (parentA?.name || '').localeCompare(parentB?.name || '', 'pt-BR');
+        if (parentCompare !== 0) return parentCompare;
+        
+        return a.name.localeCompare(b.name, 'pt-BR');
+      });
+    
+    // Intercalar: cada pai seguido de suas subcategorias
+    const result: typeof allCategories = [];
+    parents.forEach(parent => {
+      result.push(parent);
+      const subs = children.filter(child => child.parent_id === parent.id);
+      result.push(...subs);
+    });
+    
+    return result;
   })() : [];
+
+  // Limpar categoria se mudar o tipo e a categoria não for do tipo correto
+  useEffect(() => {
+    const currentCategoryId = form.getValues("category_id");
+    if (currentCategoryId && allCategories) {
+      const currentCategory = allCategories.find(c => c.id === currentCategoryId);
+      if (currentCategory && currentCategory.type !== watchType) {
+        form.setValue("category_id", "");
+      }
+    }
+  }, [watchType, allCategories, form]);
 
   // Populate form when editing
   useEffect(() => {
@@ -281,39 +325,89 @@ export function TransactionModal({ open, onClose, transaction, defaultType = 'ex
               control={form.control}
               name="category_id"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="flex flex-col">
                   <FormLabel>Categoria</FormLabel>
                   <div className="flex gap-2">
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Selecione uma categoria" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {categories?.map((category) => {
-                          const IconComponent = category.icon
-                            ? (LucideIcons[category.icon as keyof typeof LucideIcons] as React.ComponentType<{ className?: string }>)
-                            : LucideIcons.DollarSign;
-                          
-                          const displayName = allCategories ? formatCategoryName(category, allCategories) : category.name;
-                          
-                          return (
-                            <SelectItem key={category.id} value={category.id}>
-                              <div className="flex items-center gap-2">
-                                {IconComponent && (
-                                  <IconComponent
-                                    className="h-4 w-4"
-                                    style={{ color: category.color || "#059669" }}
-                                  />
-                                )}
-                                <span>{displayName}</span>
-                              </div>
-                            </SelectItem>
-                          );
-                        })}
-                      </SelectContent>
-                    </Select>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            className={cn(
+                              "flex-1 justify-between",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value
+                              ? (() => {
+                                  const selected = categories.find((c) => c.id === field.value);
+                                  if (!selected) return "Selecione uma categoria";
+                                  const IconComponent = selected.icon
+                                    ? (LucideIcons[selected.icon as keyof typeof LucideIcons] as React.ComponentType<{ className?: string }>)
+                                    : LucideIcons.DollarSign;
+                                  const displayName = allCategories ? formatCategoryName(selected, allCategories) : selected.name;
+                                  return (
+                                    <span className="flex items-center gap-2">
+                                      {IconComponent && (
+                                        <IconComponent
+                                          className="h-4 w-4"
+                                          style={{ color: selected.color || "#059669" }}
+                                        />
+                                      )}
+                                      {displayName}
+                                    </span>
+                                  );
+                                })()
+                              : "Selecione uma categoria"}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                        <Command>
+                          <CommandInput placeholder="Buscar categoria..." />
+                          <CommandList>
+                            <CommandEmpty>Nenhuma categoria encontrada.</CommandEmpty>
+                            <CommandGroup>
+                              {categories?.map((category) => {
+                                const IconComponent = category.icon
+                                  ? (LucideIcons[category.icon as keyof typeof LucideIcons] as React.ComponentType<{ className?: string }>)
+                                  : LucideIcons.DollarSign;
+                                
+                                const displayName = allCategories ? formatCategoryName(category, allCategories) : category.name;
+                                
+                                return (
+                                  <CommandItem
+                                    key={category.id}
+                                    value={`${category.name} ${displayName}`}
+                                    onSelect={() => {
+                                      form.setValue("category_id", category.id);
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        category.id === field.value ? "opacity-100" : "opacity-0"
+                                      )}
+                                    />
+                                    {IconComponent && (
+                                      <IconComponent
+                                        className="mr-2 h-4 w-4"
+                                        style={{ color: category.color || "#059669" }}
+                                      />
+                                    )}
+                                    <span className={category.parent_id ? "ml-4 text-sm" : ""}>
+                                      {displayName}
+                                    </span>
+                                  </CommandItem>
+                                );
+                              })}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                     
                     {/* Botão Gerenciar Categorias */}
                     <Button
