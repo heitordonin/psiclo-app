@@ -272,6 +272,8 @@ function CategorySection({ title, categories, onEdit, onDelete, emptyMessage }: 
               category={category}
               onEdit={() => onEdit(category)}
               onDelete={() => onDelete(category)}
+              onEditSubcategory={onEdit}
+              onDeleteSubcategory={onDelete}
             />
           ))}
         </div>
@@ -284,19 +286,35 @@ interface CategoryItemProps {
   category: CategoryWithSubcategories;
   onEdit: () => void;
   onDelete: () => void;
+  onEditSubcategory?: (sub: Category) => void;
+  onDeleteSubcategory?: (sub: Category) => void;
+  isSubcategory?: boolean;
 }
 
-function CategoryItem({ category, onEdit, onDelete }: CategoryItemProps) {
+function CategoryItem({ 
+  category, 
+  onEdit, 
+  onDelete, 
+  onEditSubcategory, 
+  onDeleteSubcategory,
+  isSubcategory = false 
+}: CategoryItemProps) {
   const canEdit = !category.is_default;
 
   return (
-    <div className="p-4">
+    <div className={isSubcategory ? "py-2" : "p-4"}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3 flex-1">
-          <CategoryIcon icon={category.icon} color={category.color} />
+          <CategoryIcon 
+            icon={category.icon} 
+            color={category.color} 
+            size={isSubcategory ? 16 : 20} 
+          />
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <span className="font-medium">{category.name}</span>
+              <span className={isSubcategory ? "text-sm text-muted-foreground" : "font-medium"}>
+                {category.name}
+              </span>
               {category.is_default && (
                 <Badge variant="secondary" className="text-xs">
                   padrão
@@ -308,24 +326,36 @@ function CategoryItem({ category, onEdit, onDelete }: CategoryItemProps) {
 
         {canEdit && (
           <div className="flex gap-2">
-            <Button variant="ghost" size="icon" onClick={onEdit}>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={onEdit}
+              className={isSubcategory ? "h-8 w-8" : ""}
+            >
               <Edit2 className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={onDelete}>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={onDelete}
+              className={isSubcategory ? "h-8 w-8" : ""}
+            >
               <Trash2 className="h-4 w-4" />
             </Button>
           </div>
         )}
       </div>
 
-      {/* Subcategorias */}
-      {category.subcategories && category.subcategories.length > 0 && (
-        <div className="ml-14 mt-3 space-y-2">
+      {!isSubcategory && category.subcategories && category.subcategories.length > 0 && (
+        <div className="ml-14 mt-3 space-y-1 border-l-2 border-muted pl-4">
           {category.subcategories.map((sub) => (
-            <div key={sub.id} className="flex items-center gap-3 text-sm">
-              <CategoryIcon icon={sub.icon} color={sub.color} size={16} />
-              <span className="text-muted-foreground">{sub.name}</span>
-            </div>
+            <CategoryItem
+              key={sub.id}
+              category={sub}
+              onEdit={() => onEditSubcategory?.(sub)}
+              onDelete={() => onDeleteSubcategory?.(sub)}
+              isSubcategory={true}
+            />
           ))}
         </div>
       )}
