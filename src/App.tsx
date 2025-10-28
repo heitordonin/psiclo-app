@@ -10,7 +10,9 @@ import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
 import Transactions from "./pages/Transactions";
 import Categories from "./pages/Categories";
-import Budget from "./pages/Budget";
+import SpendingGoals from "./pages/SpendingGoals";
+import Goals from "./pages/Goals";
+import GoalDetails from "./pages/GoalDetails";
 import Reports from "./pages/Reports";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
@@ -62,10 +64,26 @@ function App() {
                 }
               />
               <Route
-                path="/budget"
+                path="/spending-goals"
                 element={
                   <ProtectedRoute>
-                    <Budget />
+                    <SpendingGoals />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/goals"
+                element={
+                  <ProtectedRoute>
+                    <Goals />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/goals/:id"
+                element={
+                  <ProtectedRoute>
+                    <GoalDetails />
                   </ProtectedRoute>
                 }
               />

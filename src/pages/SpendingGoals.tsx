@@ -134,7 +134,7 @@ export default function Budget() {
       {/* Header fixo */}
       <div className="bg-primary px-4 pb-4 pt-6 border-b">
         <div className="flex items-center justify-between mb-2">
-          <h1 className="text-2xl font-bold text-primary-foreground">Orçamento</h1>
+          <h1 className="text-2xl font-bold text-primary-foreground">Metas de Gasto</h1>
           {budgets && budgets.items.length === 0 && !budgetsLoading && (
             <Button
               variant="ghost"

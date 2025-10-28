@@ -1,10 +1,11 @@
 import { NavLink } from "react-router-dom";
-import { Home, ArrowLeftRight, PieChart, BarChart3, User } from "lucide-react";
+import { Home, ArrowLeftRight, PieChart, BarChart3, User, Target } from "lucide-react";
 
 const navItems = [
   { to: "/", icon: Home, label: "Início" },
   { to: "/transactions", icon: ArrowLeftRight, label: "Transações" },
-  { to: "/budget", icon: PieChart, label: "Orçamento" },
+  { to: "/spending-goals", icon: PieChart, label: "Gastos" },
+  { to: "/goals", icon: Target, label: "Metas" },
   { to: "/reports", icon: BarChart3, label: "Relatórios" },
   { to: "/profile", icon: User, label: "Perfil" },
 ];
