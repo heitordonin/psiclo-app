@@ -3,6 +3,7 @@ import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface AuthContextType {
   user: User | null;
@@ -20,39 +21,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const seedCategories = async () => {
+    try {
+      await supabase.rpc('seed_default_categories_for_me');
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+    } catch (error) {
+      console.error('Erro ao criar categorias padrão:', error);
+    }
+  };
 
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
 
         // Seed default categories after sign in or sign up
         if (session && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) {
-          try {
-            await supabase.rpc('seed_default_categories_for_me');
-          } catch (error) {
-            console.error('Erro ao criar categorias padrão:', error);
-          }
+          setTimeout(() => {
+            seedCategories();
+          }, 0);
         }
       }
     );
 
     // Check for existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
 
       // Seed default categories for existing session
       if (session) {
-        try {
-          await supabase.rpc('seed_default_categories_for_me');
-        } catch (error) {
-          console.error('Erro ao criar categorias padrão:', error);
-        }
+        setTimeout(() => {
+          seedCategories();
+        }, 0);
       }
     });
 
