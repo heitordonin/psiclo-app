@@ -37,7 +37,10 @@ export function useCreateFinancialGoal() {
       const { data, error } = await supabase
         .from("financial_goals")
         .insert({
-          ...goal,
+          name: goal.name,
+          goal_type: goal.goal_type,
+          target_amount: goal.target_amount,
+          target_date: goal.target_date,
           user_id: userData.user?.id,
           current_amount: 0,
         })
@@ -51,8 +54,10 @@ export function useCreateFinancialGoal() {
       queryClient.invalidateQueries({ queryKey: ["financial-goals"] });
       toast.success("Meta criada com sucesso");
     },
-    onError: () => {
-      toast.error("Não foi possível criar a meta");
+    onError: (error: any) => {
+      console.error("Erro ao criar meta:", error);
+      const errorMessage = error?.message || "Não foi possível criar a meta";
+      toast.error(errorMessage);
     },
   });
 }

@@ -113,6 +113,9 @@ export function ContributionModal({ open, onClose, onSave }: ContributionModalPr
                         onSelect={field.onChange}
                         disabled={(date) => date > new Date()}
                         initialFocus
+                        captionLayout="dropdown-buttons"
+                        fromYear={new Date().getFullYear() - 10}
+                        toYear={new Date().getFullYear()}
                         className="pointer-events-auto"
                       />
                     </PopoverContent>
