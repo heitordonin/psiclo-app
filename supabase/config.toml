@@ -1,1 +1,4 @@
 project_id = "fludwbvawljkblnlsqwd"
+
+[functions.handle-auth-hook]
+verify_jwt = false
