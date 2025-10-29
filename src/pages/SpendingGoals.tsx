@@ -123,28 +123,27 @@ export default function Budget() {
 
   return (
     <div className="flex flex-col h-screen bg-muted/30">
-      {/* Header fixo */}
-      <div className="bg-primary px-4 pb-4 pt-6 border-b">
-        <div className="flex items-center justify-between mb-2">
-          <h1 className="text-2xl font-bold text-primary-foreground">Metas de Gasto</h1>
-          {budgets && budgets.items.length === 0 && !budgetsLoading && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleCopyLastMonth}
-              disabled={copyBudget.isPending}
-              className="text-primary-foreground hover:bg-primary-foreground/10"
-            >
-              <Copy className="h-4 w-4 mr-2" />
-              Copiar mês anterior
-            </Button>
-          )}
-        </div>
-        <MonthPicker value={selectedMonth} onChange={setSelectedMonth} />
-      </div>
-
-      {/* Conteúdo scrollável */}
+      {/* Conteúdo scrollável com header sticky */}
       <div className="flex-1 overflow-y-auto pb-24">
+        {/* Header sticky dentro do scroll */}
+        <div className="bg-primary px-4 pb-4 pt-6 border-b sticky top-0 z-10">
+          <div className="flex items-center justify-between mb-2">
+            <h1 className="text-2xl font-bold text-primary-foreground">Metas de Gasto</h1>
+            {budgets && budgets.items.length === 0 && !budgetsLoading && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleCopyLastMonth}
+                disabled={copyBudget.isPending}
+                className="text-primary-foreground hover:bg-primary-foreground/10"
+              >
+                <Copy className="h-4 w-4 mr-2" />
+                Copiar mês anterior
+              </Button>
+            )}
+          </div>
+          <MonthPicker value={selectedMonth} onChange={setSelectedMonth} />
+        </div>
         {isLoading ? (
           <div className="p-4 space-y-4">
             <Skeleton className="h-40" />
