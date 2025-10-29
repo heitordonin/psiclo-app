@@ -126,7 +126,7 @@ export default function Budget() {
       {/* Conteúdo scrollável com header sticky */}
       <div className="flex-1 overflow-y-auto pb-24">
         {/* Header sticky dentro do scroll */}
-        <div className="bg-primary px-4 pb-4 pt-6 border-b sticky top-0 z-10">
+        <div className="bg-primary px-4 pb-4 pt-6 border-b">
           <div className="flex items-center justify-between mb-2">
             <h1 className="text-2xl font-bold text-primary-foreground">Metas de Gasto</h1>
             {budgets && budgets.items.length === 0 && !budgetsLoading && (

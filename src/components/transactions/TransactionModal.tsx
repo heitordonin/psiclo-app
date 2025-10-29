@@ -365,14 +365,16 @@ export function TransactionModal({ open, onClose, transaction, defaultType = 'ex
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
-                      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start" onOpenAutoFocus={(e) => e.preventDefault()} style={{ pointerEvents: 'auto' }}>
             <Command>
               <CommandInput placeholder="Buscar categoria..." />
-              <CommandList 
+               <CommandList 
                 className="max-h-[300px] overflow-y-auto"
                 style={{
                   WebkitOverflowScrolling: 'touch',
                   touchAction: 'pan-y',
+                  overscrollBehavior: 'contain',
+                  pointerEvents: 'auto',
                 }}
               >
                 <CommandEmpty>Nenhuma categoria encontrada.</CommandEmpty>
