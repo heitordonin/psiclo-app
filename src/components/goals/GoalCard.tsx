@@ -2,6 +2,7 @@ import { Target } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { formatCurrency } from "@/lib/formatters";
+import { format, parseISO } from "date-fns";
 import type { Database } from "@/integrations/supabase/types";
 
 type FinancialGoal = Database["public"]["Tables"]["financial_goals"]["Row"];
@@ -33,6 +34,11 @@ export function GoalCard({ goal, onClick }: GoalCardProps) {
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-sm truncate">{goal.name}</h3>
+          {goal.target_date && (
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Meta: {format(parseISO(goal.target_date), "MM/yyyy")}
+            </p>
+          )}
         </div>
       </div>
 
