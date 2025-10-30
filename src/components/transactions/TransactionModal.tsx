@@ -329,7 +329,7 @@ export function TransactionModal({ open, onClose, transaction, defaultType = 'ex
                 <FormItem className="flex flex-col">
                   <FormLabel>Categoria</FormLabel>
                   <div className="flex gap-2">
-                    <Popover open={categoryPopoverOpen} onOpenChange={setCategoryPopoverOpen}>
+                    <Popover open={categoryPopoverOpen} onOpenChange={setCategoryPopoverOpen} modal={false}>
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button
@@ -365,18 +365,20 @@ export function TransactionModal({ open, onClose, transaction, defaultType = 'ex
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
-                      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start" onOpenAutoFocus={(e) => e.preventDefault()} style={{ pointerEvents: 'auto' }}>
-            <Command>
+                      <PopoverContent 
+                        className="w-[--radix-popover-trigger-width] p-0" 
+                        align="start"
+                        onOpenAutoFocus={(e) => e.preventDefault()}
+                        onInteractOutside={(e) => {
+                          const target = e.target as HTMLElement;
+                          if (target.closest('[cmdk-list]') || target.closest('[cmdk-input]')) {
+                            e.preventDefault();
+                          }
+                        }}
+                      >
+            <Command shouldFilter>
               <CommandInput placeholder="Buscar categoria..." />
-               <CommandList 
-                className="max-h-[300px] overflow-y-auto"
-                style={{
-                  WebkitOverflowScrolling: 'touch',
-                  touchAction: 'pan-y',
-                  overscrollBehavior: 'contain',
-                  pointerEvents: 'auto',
-                }}
-              >
+               <CommandList>
                 <CommandEmpty>Nenhuma categoria encontrada.</CommandEmpty>
                 <CommandGroup>
                   {categories?.map((category) => {
