@@ -1,10 +1,10 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router-dom";
 import { format, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, TrendingUp, TrendingDown, Settings, Check, ChevronsUpDown } from "lucide-react";
+import { CalendarIcon, TrendingUp, TrendingDown, Settings, ChevronsUpDown } from "lucide-react";
 import * as LucideIcons from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -32,14 +32,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -51,6 +43,7 @@ import { CurrencyInput } from "@/components/ui/currency-input";
 import { transactionSchema, type TransactionFormData } from "@/lib/validations/transaction";
 import { useCategories, formatCategoryName } from "@/hooks/useCategories";
 import { useCreateTransaction, useUpdateTransaction } from "@/hooks/useTransactions";
+import { CategoryPickerSheet } from "./CategoryPickerSheet";
 import type { Database } from "@/integrations/supabase/types";
 
 type Transaction = Database["public"]["Tables"]["transactions"]["Row"] & {
@@ -70,9 +63,7 @@ export function TransactionModal({ open, onClose, transaction, defaultType = 'ex
   const { user } = useAuth();
   const createMutation = useCreateTransaction();
   const updateMutation = useUpdateTransaction();
-  const [categoryPopoverOpen, setCategoryPopoverOpen] = useState(false);
-  const commandListRef = useRef<HTMLDivElement>(null);
-  const touchStartY = useRef<number>(0);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const form = useForm<TransactionFormData>({
     resolver: zodResolver(transactionSchema),
@@ -133,56 +124,6 @@ export function TransactionModal({ open, onClose, transaction, defaultType = 'ex
       }
     }
   }, [watchType, allCategories, form]);
-
-  // Hook para forçar scroll com WHEEL e TOUCH
-  useEffect(() => {
-    const commandList = commandListRef.current;
-    if (!commandList || !categoryPopoverOpen) return;
-
-    // Handler para WHEEL (rodinha do mouse)
-    const handleWheel = (e: WheelEvent) => {
-      e.stopPropagation();
-      e.preventDefault();
-      commandList.scrollTop += e.deltaY;
-      console.log('🖱️ Wheel scroll aplicado:', e.deltaY);
-    };
-
-    // Handler para TOUCHSTART (início do toque)
-    const handleTouchStart = (e: TouchEvent) => {
-      touchStartY.current = e.touches[0].clientY;
-      console.log('👆 Touch start:', touchStartY.current);
-    };
-
-    // Handler para TOUCHMOVE (arrastar o dedo)
-    const handleTouchMove = (e: TouchEvent) => {
-      e.stopPropagation();
-      
-      const touchY = e.touches[0].clientY;
-      const deltaY = touchStartY.current - touchY;
-      
-      commandList.scrollTop += deltaY;
-      touchStartY.current = touchY;
-      
-      console.log('👆 Touch scroll aplicado:', deltaY);
-      
-      // Previne scroll da página de fundo
-      if (commandList.scrollTop > 0 && 
-          commandList.scrollTop < commandList.scrollHeight - commandList.clientHeight) {
-        e.preventDefault();
-      }
-    };
-
-    // Adiciona listeners com capture para interceptar antes de bloqueios
-    commandList.addEventListener('wheel', handleWheel, { capture: true, passive: false });
-    commandList.addEventListener('touchstart', handleTouchStart, { capture: true, passive: true });
-    commandList.addEventListener('touchmove', handleTouchMove, { capture: true, passive: false });
-
-    return () => {
-      commandList.removeEventListener('wheel', handleWheel, { capture: true } as any);
-      commandList.removeEventListener('touchstart', handleTouchStart, { capture: true } as any);
-      commandList.removeEventListener('touchmove', handleTouchMove, { capture: true } as any);
-    };
-  }, [categoryPopoverOpen]);
 
   // Populate form when editing
   useEffect(() => {
@@ -381,107 +322,39 @@ export function TransactionModal({ open, onClose, transaction, defaultType = 'ex
                 <FormItem className="flex flex-col">
                   <FormLabel>Categoria</FormLabel>
                   <div className="flex gap-2">
-                    <Popover open={categoryPopoverOpen} onOpenChange={setCategoryPopoverOpen} modal={false}>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            role="combobox"
-                            className={cn(
-                              "flex-1 justify-between",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            {field.value
-                              ? (() => {
-                                  const selected = categories.find((c) => c.id === field.value);
-                                  if (!selected) return "Selecione uma categoria";
-                                  const IconComponent = selected.icon
-                                    ? (LucideIcons[selected.icon as keyof typeof LucideIcons] as React.ComponentType<{ className?: string }>)
-                                    : LucideIcons.DollarSign;
-                                  const displayName = allCategories ? formatCategoryName(selected, allCategories) : selected.name;
-                                  return (
-                                    <span className="flex items-center gap-2">
-                                      {IconComponent && (
-                                        <IconComponent
-                                          className="h-4 w-4"
-                                          style={{ color: selected.color || "#059669" }}
-                                        />
-                                      )}
-                                      {displayName}
-                                    </span>
-                                  );
-                                })()
-                              : "Selecione uma categoria"}
-                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent 
-                        className="w-[--radix-popover-trigger-width] p-0" 
-                        align="start"
-                        onOpenAutoFocus={(e) => e.preventDefault()}
-                        onPointerDownOutside={(e) => {
-                          const target = e.target as HTMLElement;
-                          if (target.closest('[cmdk-list]') || target.closest('[cmdk-input]')) {
-                            e.preventDefault();
-                          }
-                        }}
-                        style={{ pointerEvents: 'auto' }}
-                      >
-            <Command shouldFilter style={{ pointerEvents: 'auto' }}>
-              <CommandInput placeholder="Buscar categoria..." />
-               <CommandList 
-                ref={commandListRef}
-                style={{
-                  pointerEvents: 'auto',
-                  touchAction: 'pan-y',
-                  WebkitOverflowScrolling: 'touch',
-                }}
-              >
-                <CommandEmpty>Nenhuma categoria encontrada.</CommandEmpty>
-                <CommandGroup>
-                  {categories?.map((category) => {
-                    const IconComponent = category.icon
-                      ? (LucideIcons[category.icon as keyof typeof LucideIcons] as React.ComponentType<{ className?: string }>)
-                      : LucideIcons.DollarSign;
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className={cn(
+                        "flex-1 justify-between",
+                        !field.value && "text-muted-foreground"
+                      )}
+                      onClick={() => setPickerOpen(true)}
+                    >
+                      {field.value
+                        ? (() => {
+                            const selected = categories.find((c) => c.id === field.value);
+                            if (!selected) return "Selecione uma categoria";
+                            const IconComponent = selected.icon
+                              ? (LucideIcons[selected.icon as keyof typeof LucideIcons] as React.ComponentType<{ className?: string }>)
+                              : LucideIcons.DollarSign;
+                            const displayName = allCategories ? formatCategoryName(selected, allCategories) : selected.name;
+                            return (
+                              <span className="flex items-center gap-2">
+                                {IconComponent && (
+                                  <IconComponent
+                                    className="h-4 w-4"
+                                    style={{ color: selected.color || "#059669" }}
+                                  />
+                                )}
+                                {displayName}
+                              </span>
+                            );
+                          })()
+                        : "Selecione uma categoria"}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
                     
-                    const displayName = allCategories ? formatCategoryName(category, allCategories) : category.name;
-                    
-                    return (
-                      <CommandItem
-                        key={category.id}
-                        value={`${category.name} ${displayName}`}
-                        onSelect={() => {
-                          form.setValue("category_id", category.id);
-                          setCategoryPopoverOpen(false);
-                        }}
-                      >
-                        <Check
-                          className={cn(
-                            "mr-2 h-4 w-4",
-                            category.id === field.value ? "opacity-100" : "opacity-0"
-                          )}
-                        />
-                        {IconComponent && (
-                          <IconComponent
-                            className="mr-2 h-4 w-4"
-                            style={{ color: category.color || "#059669" }}
-                          />
-                        )}
-                        <span className={category.parent_id ? "ml-4 text-sm" : ""}>
-                          {displayName}
-                        </span>
-                      </CommandItem>
-                    );
-                  })}
-                </CommandGroup>
-              </CommandList>
-            </Command>
-                      </PopoverContent>
-                    </Popover>
-                    
-                    {/* Botão Gerenciar Categorias */}
                     <Button
                       type="button"
                       variant="outline"
@@ -498,6 +371,15 @@ export function TransactionModal({ open, onClose, transaction, defaultType = 'ex
                   <FormMessage />
                 </FormItem>
               )}
+            />
+
+            <CategoryPickerSheet
+              open={pickerOpen}
+              onOpenChange={setPickerOpen}
+              value={form.watch("category_id")}
+              onChange={(id) => form.setValue("category_id", id, { shouldValidate: true })}
+              categories={categories}
+              allCategories={allCategories ?? []}
             />
 
             {/* Transação Recorrente */}
