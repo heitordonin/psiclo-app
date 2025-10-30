@@ -8,16 +8,11 @@ import type { Database } from "@/integrations/supabase/types";
 type Category = Database["public"]["Tables"]["budget_categories"]["Row"];
 
 interface BudgetCategoryItemProps {
-  category: Category;
-  budget: number;
-  spent: number;
+  category: Category & { budget: number; spent: number };
 }
 
-export function BudgetCategoryItem({
-  category,
-  budget,
-  spent,
-}: BudgetCategoryItemProps) {
+export function BudgetCategoryItem({ category }: BudgetCategoryItemProps) {
+  const { budget, spent } = category;
   const percentage = budget > 0 ? (spent / budget) * 100 : 0;
   const isOverBudget = percentage > 100;
   const isNearLimit = percentage > 80 && percentage <= 100;

@@ -3,7 +3,8 @@ import { BottomNav } from "@/components/BottomNav";
 import { MonthPicker } from "@/components/budget/MonthPicker";
 import { BudgetSummary } from "@/components/budget/BudgetSummary";
 import { BudgetDistributionChart } from "@/components/budget/BudgetDistributionChart";
-import { BudgetCategoryItemEditable } from "@/components/budget/BudgetCategoryItemEditable";
+import { BudgetCategoryItem } from "@/components/budget/BudgetCategoryItem";
+import { BudgetConfigSheet } from "@/components/budget/BudgetConfigSheet";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,7 +15,7 @@ import {
   useSetBudget,
   useCopyBudget,
 } from "@/hooks/useBudget";
-import { Copy } from "lucide-react";
+import { Copy, Settings } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
 import { subMonths } from "date-fns";
@@ -28,6 +29,7 @@ interface CategoryWithBudget extends Category {
 
 export default function Budget() {
   const [selectedMonth, setSelectedMonth] = useState(new Date());
+  const [configSheetOpen, setConfigSheetOpen] = useState(false);
 
   // Queries
   const { data: categories, isLoading: categoriesLoading } = useParentCategories("expense");
@@ -83,15 +85,28 @@ export default function Budget() {
   }, [budgets, spending, selectedMonth]);
 
   // Handlers
-  const handleBudgetChange = async (categoryId: string, amount: number) => {
+  const handleSaveBudgets = async (budgets: Record<string, number>) => {
     try {
-      await setBudget.mutateAsync({
-        categoryId,
-        month: selectedMonth,
-        amount,
+      await Promise.all(
+        Object.entries(budgets).map(([categoryId, amount]) =>
+          setBudget.mutateAsync({
+            categoryId,
+            month: selectedMonth,
+            amount,
+          })
+        )
+      );
+      toast({
+        title: "Metas atualizadas",
+        description: "Suas metas de gasto foram salvas com sucesso!",
       });
     } catch (error) {
-      console.error("Error saving budget:", error);
+      console.error("Error saving budgets:", error);
+      toast({
+        title: "Erro ao salvar",
+        description: "Não foi possível salvar suas metas. Tente novamente.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -109,21 +124,7 @@ export default function Budget() {
     <div className="min-h-screen bg-muted/30 pb-24">
       {/* Header - NÃO fixo, rola com o conteúdo */}
       <div className="bg-primary px-4 pb-4 pt-6">
-        <div className="flex items-center justify-between mb-2">
-          <h1 className="text-2xl font-bold text-primary-foreground">Metas de Gasto</h1>
-          {budgets && budgets.items.length === 0 && !budgetsLoading && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleCopyLastMonth}
-              disabled={copyBudget.isPending}
-              className="text-primary-foreground hover:bg-primary-foreground/10"
-            >
-              <Copy className="h-4 w-4 mr-2" />
-              Copiar mês anterior
-            </Button>
-          )}
-        </div>
+        <h1 className="text-2xl font-bold text-primary-foreground mb-2">Metas de Gasto</h1>
         <MonthPicker value={selectedMonth} onChange={setSelectedMonth} />
       </div>
 
@@ -160,20 +161,52 @@ export default function Budget() {
             </div>
           )}
 
-          {/* Lista de categorias com edição inline */}
+          {/* Botão de configuração e atalhos */}
+          <div className="px-4 mb-4 flex gap-2">
+            <Button
+              onClick={() => setConfigSheetOpen(true)}
+              className="flex-1"
+              size="lg"
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              Configurar Metas
+            </Button>
+            {budgets && budgets.items.length === 0 && !budgetsLoading && (
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={handleCopyLastMonth}
+                disabled={copyBudget.isPending}
+              >
+                <Copy className="h-4 w-4 mr-2" />
+                Copiar mês anterior
+              </Button>
+            )}
+          </div>
+
+          {/* Lista de categorias - visualização apenas */}
           <div className="px-4 space-y-3">
             <h2 className="font-semibold text-lg mb-3">Metas por Categoria</h2>
-            {categoriesWithBudget.map((category) => (
-              <BudgetCategoryItemEditable
-                key={category.id}
-                category={category}
-                onBudgetChange={(value) => handleBudgetChange(category.id, value)}
-                isSaving={setBudget.isPending}
-              />
-            ))}
+            {categoriesWithBudget.length > 0 ? (
+              categoriesWithBudget.map((category) => (
+                <BudgetCategoryItem key={category.id} category={category} />
+              ))
+            ) : (
+              <p className="text-center text-muted-foreground py-8">
+                Nenhuma meta configurada. Clique em "Configurar Metas" para começar.
+              </p>
+            )}
           </div>
         </>
       )}
+
+      {/* Sheet de configuração */}
+      <BudgetConfigSheet
+        open={configSheetOpen}
+        onOpenChange={setConfigSheetOpen}
+        categories={categoriesWithBudget}
+        onSave={handleSaveBudgets}
+      />
 
       {/* Bottom Nav */}
       <BottomNav />

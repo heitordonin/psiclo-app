@@ -50,8 +50,6 @@ export function BudgetCategoryList({
         <BudgetCategoryItem
           key={category.id}
           category={category}
-          budget={category.budget}
-          spent={category.spent}
         />
       ))}
     </div>
