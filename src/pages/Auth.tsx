@@ -49,7 +49,7 @@ export default function Auth() {
           <div className="mx-auto mb-4 flex items-center justify-center">
             <img src={psicloLogo} alt="Psiclo Logo" className="h-16 w-auto" />
           </div>
-          <CardTitle className="text-2xl">Psiclo</CardTitle>
+          
           <CardDescription>Planejamento com consciência </CardDescription>
         </CardHeader>
         <CardContent>
