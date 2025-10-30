@@ -35,6 +35,9 @@ export function BudgetSummary({
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-muted-foreground">Orçamento do Mês</p>
+              <p className="text-xs text-muted-foreground/70 italic mb-1">
+                Soma automática das metas individuais
+              </p>
               <p className="text-2xl font-bold">{formatCurrency(totalBudget)}</p>
             </div>
             <div className={`text-3xl font-bold ${getStatusColor()}`}>

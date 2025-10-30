@@ -1,10 +1,9 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { BottomNav } from "@/components/BottomNav";
 import { MonthPicker } from "@/components/budget/MonthPicker";
 import { BudgetSummary } from "@/components/budget/BudgetSummary";
-import { BudgetCategoryList } from "@/components/budget/BudgetCategoryList";
-import { QuickSetup } from "@/components/budget/QuickSetup";
 import { BudgetDistributionChart } from "@/components/budget/BudgetDistributionChart";
+import { BudgetCategoryItemEditable } from "@/components/budget/BudgetCategoryItemEditable";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,7 +14,7 @@ import {
   useSetBudget,
   useCopyBudget,
 } from "@/hooks/useBudget";
-import { Settings, Copy } from "lucide-react";
+import { Copy } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
 import { subMonths } from "date-fns";
@@ -29,7 +28,6 @@ interface CategoryWithBudget extends Category {
 
 export default function Budget() {
   const [selectedMonth, setSelectedMonth] = useState(new Date());
-  const [showQuickSetup, setShowQuickSetup] = useState(false);
 
   // Queries
   const { data: categories, isLoading: categoriesLoading } = useParentCategories("expense");
@@ -53,15 +51,6 @@ export default function Budget() {
         budgets?.items.find((b) => b.category_id === cat.id)?.planned_amount || 0,
       spent: spending?.byCategory[cat.id] || 0,
     })) || [];
-
-  // Criar mapa de budgets atuais para passar ao QuickSetup
-  const currentBudgets = useMemo(() => {
-    const map: Record<string, number> = {};
-    budgets?.items.forEach((budget) => {
-      map[budget.category_id] = budget.planned_amount;
-    });
-    return map;
-  }, [budgets]);
 
   // Sistema de alertas
   useEffect(() => {
@@ -94,20 +83,15 @@ export default function Budget() {
   }, [budgets, spending, selectedMonth]);
 
   // Handlers
-  const handleQuickSetupComplete = async (budgetsData: Record<string, number>) => {
+  const handleBudgetChange = async (categoryId: string, amount: number) => {
     try {
-      await Promise.all(
-        Object.entries(budgetsData).map(([categoryId, amount]) =>
-          setBudget.mutateAsync({
-            categoryId,
-            month: selectedMonth,
-            amount,
-          })
-        )
-      );
-      setShowQuickSetup(false);
+      await setBudget.mutateAsync({
+        categoryId,
+        month: selectedMonth,
+        amount,
+      });
     } catch (error) {
-      console.error("Error saving budgets:", error);
+      console.error("Error saving budget:", error);
     }
   };
 
@@ -122,92 +106,73 @@ export default function Budget() {
   const isLoading = categoriesLoading || budgetsLoading || spendingLoading;
 
   return (
-    <div className="flex flex-col h-screen bg-muted/30">
-      {/* Conteúdo scrollável com header sticky */}
-      <div className="flex-1 overflow-y-auto pb-24">
-        {/* Header sticky dentro do scroll */}
-        <div className="bg-primary px-4 pb-4 pt-6 border-b">
-          <div className="flex items-center justify-between mb-2">
-            <h1 className="text-2xl font-bold text-primary-foreground">Metas de Gasto</h1>
-            {budgets && budgets.items.length === 0 && !budgetsLoading && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleCopyLastMonth}
-                disabled={copyBudget.isPending}
-                className="text-primary-foreground hover:bg-primary-foreground/10"
-              >
-                <Copy className="h-4 w-4 mr-2" />
-                Copiar mês anterior
-              </Button>
-            )}
-          </div>
-          <MonthPicker value={selectedMonth} onChange={setSelectedMonth} />
+    <div className="min-h-screen bg-muted/30 pb-24">
+      {/* Header - NÃO fixo, rola com o conteúdo */}
+      <div className="bg-primary px-4 pb-4 pt-6">
+        <div className="flex items-center justify-between mb-2">
+          <h1 className="text-2xl font-bold text-primary-foreground">Metas de Gasto</h1>
+          {budgets && budgets.items.length === 0 && !budgetsLoading && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleCopyLastMonth}
+              disabled={copyBudget.isPending}
+              className="text-primary-foreground hover:bg-primary-foreground/10"
+            >
+              <Copy className="h-4 w-4 mr-2" />
+              Copiar mês anterior
+            </Button>
+          )}
         </div>
-        {isLoading ? (
-          <div className="p-4 space-y-4">
-            <Skeleton className="h-40" />
-            <Skeleton className="h-32" />
-            <Skeleton className="h-24" />
-            <Skeleton className="h-24" />
-            <Skeleton className="h-24" />
-          </div>
-        ) : (
-          <>
-            {/* Resumo */}
-            <BudgetSummary
-              totalBudget={totalBudget}
-              totalSpent={totalSpent}
-              remaining={remaining}
-            />
-
-            {/* Gráfico de distribuição */}
-            {budgets && budgets.items.length > 0 && (
-              <div className="mx-4 mb-4">
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base">
-                      Distribuição do Orçamento
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <BudgetDistributionChart budgets={budgets.items} />
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-
-            {/* Lista de categorias */}
-            <div className="px-4">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="font-semibold">Categorias</h2>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowQuickSetup(true)}
-                >
-                  <Settings className="h-4 w-4 mr-2" />
-                  Configuração
-                </Button>
-              </div>
-
-              <BudgetCategoryList
-                categories={categoriesWithBudget}
-              />
-            </div>
-          </>
-        )}
+        <MonthPicker value={selectedMonth} onChange={setSelectedMonth} />
       </div>
 
-      {/* Modals */}
-      {showQuickSetup && categories && (
-        <QuickSetup
-          categories={categories}
-          currentBudgets={currentBudgets}
-          onComplete={handleQuickSetupComplete}
-          onClose={() => setShowQuickSetup(false)}
-          isSaving={setBudget.isPending}
-        />
+      {isLoading ? (
+        <div className="p-4 space-y-4">
+          <Skeleton className="h-40" />
+          <Skeleton className="h-32" />
+          <Skeleton className="h-24" />
+          <Skeleton className="h-24" />
+          <Skeleton className="h-24" />
+        </div>
+      ) : (
+        <>
+          {/* Resumo - READ ONLY (soma automática) */}
+          <BudgetSummary
+            totalBudget={totalBudget}
+            totalSpent={totalSpent}
+            remaining={remaining}
+          />
+
+          {/* Gráfico de distribuição */}
+          {budgets && budgets.items.length > 0 && (
+            <div className="mx-4 mb-4">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">
+                    Distribuição do Orçamento
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <BudgetDistributionChart budgets={budgets.items} />
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Lista de categorias com edição inline */}
+          <div className="px-4 space-y-3">
+            <h2 className="font-semibold text-lg mb-3">Metas por Categoria</h2>
+            {categoriesWithBudget.map((category) => (
+              <BudgetCategoryItemEditable
+                key={category.id}
+                category={category}
+                onBudgetChange={(value) => handleBudgetChange(category.id, value)}
+                isSaving={setBudget.isPending}
+              />
+            ))}
+          </div>
+        </>
       )}
 
       {/* Bottom Nav */}
