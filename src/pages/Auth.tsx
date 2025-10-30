@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Wallet } from "lucide-react";
+import psicloLogo from "@/assets/psiclo-logo.png";
 export default function Auth() {
   const {
     signIn,
@@ -46,8 +46,8 @@ export default function Auth() {
   return <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary">
-            <Wallet className="h-6 w-6 text-primary-foreground" />
+          <div className="mx-auto mb-4 flex items-center justify-center">
+            <img src={psicloLogo} alt="Psiclo Logo" className="h-16 w-auto" />
           </div>
           <CardTitle className="text-2xl">Psiclo</CardTitle>
           <CardDescription>Planejamento com consciência </CardDescription>
