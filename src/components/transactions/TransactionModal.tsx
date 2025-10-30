@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router-dom";
@@ -71,6 +71,8 @@ export function TransactionModal({ open, onClose, transaction, defaultType = 'ex
   const createMutation = useCreateTransaction();
   const updateMutation = useUpdateTransaction();
   const [categoryPopoverOpen, setCategoryPopoverOpen] = useState(false);
+  const commandListRef = useRef<HTMLDivElement>(null);
+  const touchStartY = useRef<number>(0);
 
   const form = useForm<TransactionFormData>({
     resolver: zodResolver(transactionSchema),
@@ -131,6 +133,56 @@ export function TransactionModal({ open, onClose, transaction, defaultType = 'ex
       }
     }
   }, [watchType, allCategories, form]);
+
+  // Hook para forçar scroll com WHEEL e TOUCH
+  useEffect(() => {
+    const commandList = commandListRef.current;
+    if (!commandList || !categoryPopoverOpen) return;
+
+    // Handler para WHEEL (rodinha do mouse)
+    const handleWheel = (e: WheelEvent) => {
+      e.stopPropagation();
+      e.preventDefault();
+      commandList.scrollTop += e.deltaY;
+      console.log('🖱️ Wheel scroll aplicado:', e.deltaY);
+    };
+
+    // Handler para TOUCHSTART (início do toque)
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartY.current = e.touches[0].clientY;
+      console.log('👆 Touch start:', touchStartY.current);
+    };
+
+    // Handler para TOUCHMOVE (arrastar o dedo)
+    const handleTouchMove = (e: TouchEvent) => {
+      e.stopPropagation();
+      
+      const touchY = e.touches[0].clientY;
+      const deltaY = touchStartY.current - touchY;
+      
+      commandList.scrollTop += deltaY;
+      touchStartY.current = touchY;
+      
+      console.log('👆 Touch scroll aplicado:', deltaY);
+      
+      // Previne scroll da página de fundo
+      if (commandList.scrollTop > 0 && 
+          commandList.scrollTop < commandList.scrollHeight - commandList.clientHeight) {
+        e.preventDefault();
+      }
+    };
+
+    // Adiciona listeners com capture para interceptar antes de bloqueios
+    commandList.addEventListener('wheel', handleWheel, { capture: true, passive: false });
+    commandList.addEventListener('touchstart', handleTouchStart, { capture: true, passive: true });
+    commandList.addEventListener('touchmove', handleTouchMove, { capture: true, passive: false });
+
+    return () => {
+      commandList.removeEventListener('wheel', handleWheel, { capture: true } as any);
+      commandList.removeEventListener('touchstart', handleTouchStart, { capture: true } as any);
+      commandList.removeEventListener('touchmove', handleTouchMove, { capture: true } as any);
+    };
+  }, [categoryPopoverOpen]);
 
   // Populate form when editing
   useEffect(() => {
@@ -369,16 +421,24 @@ export function TransactionModal({ open, onClose, transaction, defaultType = 'ex
                         className="w-[--radix-popover-trigger-width] p-0" 
                         align="start"
                         onOpenAutoFocus={(e) => e.preventDefault()}
-                        onInteractOutside={(e) => {
+                        onPointerDownOutside={(e) => {
                           const target = e.target as HTMLElement;
                           if (target.closest('[cmdk-list]') || target.closest('[cmdk-input]')) {
                             e.preventDefault();
                           }
                         }}
+                        style={{ pointerEvents: 'auto' }}
                       >
-            <Command shouldFilter>
+            <Command shouldFilter style={{ pointerEvents: 'auto' }}>
               <CommandInput placeholder="Buscar categoria..." />
-               <CommandList>
+               <CommandList 
+                ref={commandListRef}
+                style={{
+                  pointerEvents: 'auto',
+                  touchAction: 'pan-y',
+                  WebkitOverflowScrolling: 'touch',
+                }}
+              >
                 <CommandEmpty>Nenhuma categoria encontrada.</CommandEmpty>
                 <CommandGroup>
                   {categories?.map((category) => {
