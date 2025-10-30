@@ -16,6 +16,7 @@ import GoalDetails from "./pages/GoalDetails";
 import Reports from "./pages/Reports";
 import Profile from "./pages/Profile";
 import FinancialDiagnosis from "./pages/FinancialDiagnosis";
+import FinancialCalculators from "./pages/FinancialCalculators";
 import NotFound from "./pages/NotFound";
 
 function App() {
@@ -109,6 +110,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <FinancialDiagnosis />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/financial-calculators"
+                element={
+                  <ProtectedRoute>
+                    <FinancialCalculators />
                   </ProtectedRoute>
                 }
               />

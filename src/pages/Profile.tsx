@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
-import { LogOut, Tag, Activity } from "lucide-react";
+import { LogOut, Tag, Activity, Calculator } from "lucide-react";
 
 export default function Profile() {
   const { user, signOut } = useAuth();
@@ -59,6 +59,19 @@ export default function Profile() {
                 <p className="font-medium">Diagnóstico Financeiro</p>
                 <p className="text-xs text-muted-foreground">
                   Analise sua saúde financeira completa
+                </p>
+              </div>
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full justify-start px-6 py-4 h-auto border-t"
+              onClick={() => navigate('/financial-calculators')}
+            >
+              <Calculator className="mr-3 h-5 w-5 text-muted-foreground" />
+              <div className="text-left">
+                <p className="font-medium">Calculadoras Financeiras</p>
+                <p className="text-xs text-muted-foreground">
+                  Planeje seu futuro financeiro
                 </p>
               </div>
             </Button>
