@@ -22,7 +22,7 @@ export function calculateMonthlyPayment(
   }
   
   const pvif = Math.pow(1 + rate, nper);
-  return -((fv + pv * pvif) / ((pvif - 1) / rate));
+  return -((fv - pv * pvif) / ((pvif - 1) / rate));
 }
 
 /**
