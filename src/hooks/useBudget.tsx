@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
+import { useEffect } from "react";
 import type { Database } from "@/integrations/supabase/types";
 
 type Budget = Database["public"]["Tables"]["budgets"]["Row"] & {
@@ -25,6 +26,30 @@ interface BudgetSuggestions {
 }
 
 export function useBudgets(month: Date) {
+  const queryClient = useQueryClient();
+
+  // Realtime subscription for budgets
+  useEffect(() => {
+    const channel = supabase
+      .channel('budgets-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'budgets'
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["budgets"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   return useQuery<BudgetsData>({
     queryKey: ["budgets", format(month, "yyyy-MM")],
     queryFn: async () => {
@@ -55,6 +80,30 @@ export function useBudgets(month: Date) {
 }
 
 export function useMonthlySpending(month: Date) {
+  const queryClient = useQueryClient();
+
+  // Realtime subscription for transactions (affects spending)
+  useEffect(() => {
+    const channel = supabase
+      .channel('transactions-spending-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'transactions'
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["monthly-spending"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   return useQuery<MonthlySpendingData>({
     queryKey: ["monthly-spending", format(month, "yyyy-MM")],
     queryFn: async () => {

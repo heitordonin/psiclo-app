@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { toast } from "sonner";
+import { useEffect } from "react";
 import type { CategoryFormData } from "@/lib/validations/transaction";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -39,6 +40,32 @@ export function formatCategoryName(category: Category, allCategories: Category[]
 }
 
 export function useCategories(type?: "income" | "expense" | "all") {
+  const queryClient = useQueryClient();
+
+  // Realtime subscription
+  useEffect(() => {
+    const channel = supabase
+      .channel('categories-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'budget_categories'
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["categories"] });
+          queryClient.invalidateQueries({ queryKey: ["parent-categories"] });
+          queryClient.invalidateQueries({ queryKey: ["transactions"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   return useQuery({
     queryKey: ["categories", type],
     queryFn: async () => {

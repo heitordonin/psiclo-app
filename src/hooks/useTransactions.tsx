@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useEffect } from "react";
 import type { Database } from "@/integrations/supabase/types";
 
 type Transaction = Database["public"]["Tables"]["transactions"]["Row"] & {
@@ -18,6 +19,32 @@ interface TransactionFilters {
 }
 
 export function useTransactions(filters?: TransactionFilters) {
+  const queryClient = useQueryClient();
+
+  // Realtime subscription
+  useEffect(() => {
+    const channel = supabase
+      .channel('transactions-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'transactions'
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["transactions"] });
+          queryClient.invalidateQueries({ queryKey: ["metrics"] });
+          queryClient.invalidateQueries({ queryKey: ["monthly-spending"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   return useQuery({
     queryKey: ["transactions", filters],
     queryFn: async () => {

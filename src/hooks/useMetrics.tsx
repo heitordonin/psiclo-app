@@ -1,5 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useEffect } from "react";
 
 interface MetricsData {
   balance: number;
@@ -14,6 +15,30 @@ interface MetricsData {
 }
 
 export function useMetrics(period: "current_month" | "last_3_months" | "all" = "current_month") {
+  const queryClient = useQueryClient();
+
+  // Realtime subscription for transactions
+  useEffect(() => {
+    const channel = supabase
+      .channel('metrics-transactions-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'transactions'
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["metrics"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   return useQuery({
     queryKey: ["metrics", period],
     queryFn: async (): Promise<MetricsData> => {
