@@ -324,7 +324,6 @@ export function TransactionModal({ open, onClose, transaction, defaultType = 'ex
                               setIsOpen(false);
                             }
                           }}
-                          disabled={(date) => startOfDay(date) > startOfDay(new Date())}
                           initialFocus
                           locale={ptBR}
                         />
