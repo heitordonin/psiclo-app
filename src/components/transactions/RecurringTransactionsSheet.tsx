@@ -1,4 +1,4 @@
-import { Repeat, Plus, AlertCircle } from "lucide-react";
+import { Repeat, Plus, AlertCircle, RefreshCw } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -9,7 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useRecurringTransactions, useDeleteRecurringTransaction } from "@/hooks/useRecurringTransactions";
+import { useRecurringTransactions, useDeleteRecurringTransaction, useProcessRecurringTransactions } from "@/hooks/useRecurringTransactions";
 import { RecurringTransactionItem } from "./RecurringTransactionItem";
 import {
   AlertDialog,
@@ -32,6 +32,7 @@ interface RecurringTransactionsSheetProps {
 export function RecurringTransactionsSheet({ open, onClose, onAddRecurring }: RecurringTransactionsSheetProps) {
   const { data: transactions, isLoading } = useRecurringTransactions();
   const deleteMutation = useDeleteRecurringTransaction();
+  const processMutation = useProcessRecurringTransactions();
   const [deleteDialog, setDeleteDialog] = useState({
     isOpen: false,
     transactionId: "",
@@ -65,6 +66,7 @@ export function RecurringTransactionsSheet({ open, onClose, onAddRecurring }: Re
               <AlertCircle className="h-4 w-4" />
               <AlertDescription className="text-sm">
                 Transações recorrentes são geradas automaticamente todos os dias às 2h da manhã.
+                Use o botão abaixo para processar manualmente a qualquer momento.
               </AlertDescription>
             </Alert>
 
@@ -77,6 +79,25 @@ export function RecurringTransactionsSheet({ open, onClose, onAddRecurring }: Re
             >
               <Plus className="mr-2 h-4 w-4" />
               Adicionar Transação Recorrente
+            </Button>
+
+            <Button 
+              onClick={() => processMutation.mutate()} 
+              variant="outline"
+              className="w-full"
+              disabled={processMutation.isPending}
+            >
+              {processMutation.isPending ? (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  Processando...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Processar Recorrências Agora
+                </>
+              )}
             </Button>
 
             {isLoading ? (

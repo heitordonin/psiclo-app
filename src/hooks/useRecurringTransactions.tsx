@@ -65,3 +65,48 @@ export function useDeleteRecurringTransaction() {
     },
   });
 }
+
+export function useProcessRecurringTransactions() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async () => {
+      console.log('[Manual Process] Invoking process-recurring-transactions function...');
+      
+      const { data, error } = await supabase.functions.invoke(
+        'process-recurring-transactions',
+        { body: {} }
+      );
+      
+      if (error) {
+        console.error('[Manual Process] Error:', error);
+        throw error;
+      }
+      
+      console.log('[Manual Process] Result:', data);
+      return data;
+    },
+    onSuccess: (data) => {
+      // Invalidar queries para atualizar a lista
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["recurring-transactions"] });
+      
+      const message = data.generated > 0 
+        ? `${data.generated} nova${data.generated > 1 ? 's' : ''} transaç${data.generated > 1 ? 'ões' : 'ão'} gerada${data.generated > 1 ? 's' : ''}!`
+        : 'Todas as transações recorrentes já foram processadas.';
+      
+      toast({
+        title: "Processamento concluído",
+        description: message,
+      });
+    },
+    onError: (error: any) => {
+      console.error('[Manual Process] Toast error:', error);
+      toast({
+        title: "Erro ao processar",
+        description: error.message || "Não foi possível processar as transações recorrentes.",
+        variant: "destructive",
+      });
+    },
+  });
+}

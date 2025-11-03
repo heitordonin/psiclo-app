@@ -202,10 +202,37 @@ function calculateNextDates(
       break;
     }
 
-    // Parar se for data futura (ainda não chegou)
+    // Para recorrências mensais/anuais, incluir o período atual
+    // Para diárias/semanais, gerar apenas até hoje
     if (currentIterationDate > currentDateStart) {
-      console.log(`[Recurring] Reached future date at iteration ${iterations}`);
-      break;
+      if (pattern === 'monthly' || pattern === 'yearly') {
+        // Verificar se está no mesmo período (mês/ano)
+        const currentMonth = currentDateStart.getMonth();
+        const currentYear = currentDateStart.getFullYear();
+        const iterMonth = currentIterationDate.getMonth();
+        const iterYear = currentIterationDate.getFullYear();
+        
+        if (pattern === 'monthly') {
+          // Se for mês/ano diferente, parar
+          if (iterMonth !== currentMonth || iterYear !== currentYear) {
+            console.log(`[Recurring] Reached future month at iteration ${iterations}`);
+            break;
+          }
+          // Se for mesmo mês/ano, permitir (continua o loop)
+          console.log(`[Recurring] Including current month date: ${dateStr}`);
+        } else if (pattern === 'yearly') {
+          // Se for ano diferente, parar
+          if (iterYear !== currentYear) {
+            console.log(`[Recurring] Reached future year at iteration ${iterations}`);
+            break;
+          }
+          console.log(`[Recurring] Including current year date: ${dateStr}`);
+        }
+      } else {
+        // Para daily e weekly, parar em datas futuras
+        console.log(`[Recurring] Reached future date at iteration ${iterations}`);
+        break;
+      }
     }
 
     const dateStr = currentIterationDate.toISOString().split('T')[0];
