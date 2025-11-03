@@ -202,6 +202,9 @@ function calculateNextDates(
       break;
     }
 
+    // Converter data para string ISO (antes de usar nos logs)
+    const dateStr = currentIterationDate.toISOString().split('T')[0];
+
     // Para recorrências mensais/anuais, incluir o período atual
     // Para diárias/semanais, gerar apenas até hoje
     if (currentIterationDate > currentDateStart) {
@@ -234,8 +237,6 @@ function calculateNextDates(
         break;
       }
     }
-
-    const dateStr = currentIterationDate.toISOString().split('T')[0];
     dates.push(dateStr);
     iterations++;
 
