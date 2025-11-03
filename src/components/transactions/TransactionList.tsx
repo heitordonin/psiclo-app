@@ -1,5 +1,5 @@
 import { TransactionItem } from "./TransactionItem";
-import { isToday, isYesterday, parseISO, format } from "date-fns";
+import { isToday, isYesterday, isTomorrow, parseISO, format, isFuture, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -25,6 +25,17 @@ export function TransactionList({ transactions, onEdit, onDelete }: TransactionL
         label = "Hoje";
       } else if (isYesterday(date)) {
         label = "Ontem";
+      } else if (isTomorrow(date)) {
+        label = "Amanhã";
+      } else if (isFuture(date)) {
+        const daysUntil = differenceInDays(date, new Date());
+        if (daysUntil <= 7) {
+          label = "Esta Semana";
+        } else if (daysUntil <= 30) {
+          label = "Este Mês";
+        } else {
+          label = format(date, "MMMM/yyyy", { locale: ptBR });
+        }
       } else {
         label = format(date, "dd/MM/yyyy", { locale: ptBR });
       }

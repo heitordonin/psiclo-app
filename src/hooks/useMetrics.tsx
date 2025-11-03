@@ -63,11 +63,17 @@ export function useMetrics(period: "current_month" | "last_3_months" | "all" = "
 
       if (error) throw error;
 
-      // Calculate totals
+      // Filter out future transactions for metrics calculation
+      const today = new Date().toISOString().split("T")[0];
+      const pastTransactions = transactions?.filter(
+        (t) => t.transaction_date <= today
+      ) || [];
+
+      // Calculate totals (excluding future transactions)
       let income = 0;
       let expenses = 0;
 
-      transactions?.forEach((t) => {
+      pastTransactions.forEach((t) => {
         const amount = Number(t.amount);
         if (t.type === "income") {
           income += amount;
@@ -88,9 +94,9 @@ export function useMetrics(period: "current_month" | "last_3_months" | "all" = "
         date.setDate(date.getDate() + i);
         const dateStr = date.toISOString().split("T")[0];
 
-        const dayTransactions = transactions?.filter(
+        const dayTransactions = pastTransactions.filter(
           (t) => t.transaction_date === dateStr
-        ) || [];
+        );
 
         const dayIncome = dayTransactions
           .filter((t) => t.type === "income")

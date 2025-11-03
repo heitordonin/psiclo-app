@@ -15,10 +15,7 @@ export const transactionSchema = z.object({
   transaction_date: z.coerce.date({
     required_error: "Data é obrigatória",
     invalid_type_error: "Data inválida",
-  }).refine(
-    (date) => startOfDay(date) <= startOfDay(new Date()),
-    { message: "Data não pode ser futura" }
-  ),
+  }),
   category_id: z.string().uuid("Categoria é obrigatória"),
   type: z.enum(["income", "expense"], {
     required_error: "Tipo é obrigatório",
