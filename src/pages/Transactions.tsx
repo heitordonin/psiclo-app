@@ -4,6 +4,7 @@ import { useMetrics } from "@/hooks/useMetrics";
 import { TransactionFilters } from "@/components/transactions/TransactionFilters";
 import { TransactionList } from "@/components/transactions/TransactionList";
 import { TransactionModal } from "@/components/transactions/TransactionModal";
+import { RecurringTransactionsSheet } from "@/components/transactions/RecurringTransactionsSheet";
 import { EmptyState } from "@/components/transactions/EmptyState";
 import { TransactionSkeleton } from "@/components/transactions/TransactionSkeleton";
 import { BottomNav } from "@/components/BottomNav";
@@ -18,7 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus } from "lucide-react";
+import { Plus, Repeat } from "lucide-react";
 import { formatCurrency } from "@/lib/formatters";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -36,10 +37,14 @@ export default function Transactions() {
   const [modalState, setModalState] = useState<{
     isOpen: boolean;
     transaction?: Transaction;
+    isRecurring?: boolean;
   }>({
     isOpen: false,
     transaction: undefined,
+    isRecurring: false,
   });
+
+  const [recurringSheetOpen, setRecurringSheetOpen] = useState(false);
 
   const [deleteDialog, setDeleteDialog] = useState({
     isOpen: false,
@@ -55,7 +60,11 @@ export default function Transactions() {
   };
 
   const handleAddTransaction = () => {
-    setModalState({ isOpen: true, transaction: undefined });
+    setModalState({ isOpen: true, transaction: undefined, isRecurring: false });
+  };
+
+  const handleAddRecurringTransaction = () => {
+    setModalState({ isOpen: true, transaction: undefined, isRecurring: true });
   };
 
   const handleEditTransaction = (transaction: Transaction) => {
@@ -75,9 +84,20 @@ export default function Transactions() {
     <div className="min-h-screen bg-muted/30 pb-20">
       {/* Header */}
       <div className="bg-primary px-4 pb-6 pt-6">
-        <h1 className="text-2xl font-bold text-primary-foreground mb-2">
-          Transações
-        </h1>
+        <div className="flex items-center justify-between mb-2">
+          <h1 className="text-2xl font-bold text-primary-foreground">
+            Transações
+          </h1>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setRecurringSheetOpen(true)}
+            className="text-primary-foreground hover:bg-primary-foreground/10"
+          >
+            <Repeat className="h-4 w-4 mr-2" />
+            Recorrentes
+          </Button>
+        </div>
         <p className="text-primary-foreground/80 text-sm">
           Saldo do mês:{" "}
           <span className="font-semibold">
@@ -117,8 +137,15 @@ export default function Transactions() {
       {/* Modal de transação */}
       <TransactionModal
         open={modalState.isOpen}
-        onClose={() => setModalState({ isOpen: false, transaction: undefined })}
+        onClose={() => setModalState({ isOpen: false, transaction: undefined, isRecurring: false })}
         transaction={modalState.transaction}
+      />
+
+      {/* Sheet de transações recorrentes */}
+      <RecurringTransactionsSheet
+        open={recurringSheetOpen}
+        onClose={() => setRecurringSheetOpen(false)}
+        onAddRecurring={handleAddRecurringTransaction}
       />
 
       {/* Dialog de confirmação de delete */}
