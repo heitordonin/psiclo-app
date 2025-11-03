@@ -37,6 +37,13 @@ export function RecurringTransactionsSheet({ open, onClose, onAddRecurring }: Re
     isOpen: false,
     transactionId: "",
   });
+  const [lastRun, setLastRun] = useState<{
+    time: string;
+    processed: number;
+    generated: number;
+    skipped: number;
+  } | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const handleDeleteClick = (id: string) => {
     setDeleteDialog({ isOpen: true, transactionId: id });
@@ -45,6 +52,29 @@ export function RecurringTransactionsSheet({ open, onClose, onAddRecurring }: Re
   const handleConfirmDelete = () => {
     deleteMutation.mutate(deleteDialog.transactionId);
     setDeleteDialog({ isOpen: false, transactionId: "" });
+  };
+
+  const handleProcessRecurring = async () => {
+    if (isProcessing) return; // Prevenir cliques múltiplos
+    
+    setIsProcessing(true);
+    
+    try {
+      const result = await processMutation.mutateAsync();
+      
+      if (result) {
+        const now = new Date();
+        setLastRun({
+          time: now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+          processed: result.processed || 0,
+          generated: result.generated || 0,
+          skipped: result.skipped || 0,
+        });
+      }
+    } finally {
+      // Throttle: aguardar 1.5s antes de permitir novo clique
+      setTimeout(() => setIsProcessing(false), 1500);
+    }
   };
 
   return (
@@ -81,24 +111,35 @@ export function RecurringTransactionsSheet({ open, onClose, onAddRecurring }: Re
               Adicionar Transação Recorrente
             </Button>
 
-            <Button 
-              onClick={() => processMutation.mutate()} 
-              variant="outline"
-              className="w-full"
-              disabled={processMutation.isPending}
-            >
-              {processMutation.isPending ? (
-                <>
-                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                  Processando...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Processar Recorrências Agora
-                </>
+            <div className="space-y-2">
+              <Button 
+                onClick={handleProcessRecurring} 
+                variant="outline"
+                className="w-full"
+                disabled={isProcessing || processMutation.isPending}
+              >
+                {isProcessing || processMutation.isPending ? (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                    Processando...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Processar Recorrências Agora
+                  </>
+                )}
+              </Button>
+
+              {lastRun && (
+                <div className="text-xs text-muted-foreground text-center space-y-0.5">
+                  <p>Última execução: {lastRun.time}</p>
+                  <p className="font-medium">
+                    Processadas: {lastRun.processed} | Geradas: {lastRun.generated} | Ignoradas: {lastRun.skipped}
+                  </p>
+                </div>
               )}
-            </Button>
+            </div>
 
             {isLoading ? (
               <div className="space-y-3">

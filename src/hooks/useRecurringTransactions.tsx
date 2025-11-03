@@ -102,9 +102,12 @@ export function useProcessRecurringTransactions() {
     },
     onError: (error: any) => {
       console.error('[Manual Process] Toast error:', error);
+      
+      const errorMessage = error.message || error.error || "Não foi possível processar as transações recorrentes.";
+      
       toast({
         title: "Erro ao processar",
-        description: error.message || "Não foi possível processar as transações recorrentes.",
+        description: errorMessage,
         variant: "destructive",
       });
     },
