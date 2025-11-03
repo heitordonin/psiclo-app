@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router-dom";
 import { format, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, TrendingUp, TrendingDown, Settings, ChevronsUpDown } from "lucide-react";
+import { CalendarIcon, TrendingUp, TrendingDown, Settings, ChevronsUpDown, Calendar as CalendarDays, Hash } from "lucide-react";
 import * as LucideIcons from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CurrencyInput } from "@/components/ui/currency-input";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { transactionSchema, type TransactionFormData } from "@/lib/validations/transaction";
 import { useCategories, formatCategoryName } from "@/hooks/useCategories";
 import { useCreateTransaction, useUpdateTransaction } from "@/hooks/useTransactions";
@@ -65,6 +67,8 @@ export function TransactionModal({ open, onClose, transaction, defaultType = 'ex
   const updateMutation = useUpdateTransaction();
   const [pickerOpen, setPickerOpen] = useState(false);
 
+  const [recurrenceEndType, setRecurrenceEndType] = useState<'count' | 'date'>('count');
+
   const form = useForm<TransactionFormData>({
     resolver: zodResolver(transactionSchema),
     defaultValues: {
@@ -75,6 +79,8 @@ export function TransactionModal({ open, onClose, transaction, defaultType = 'ex
       type: defaultType,
       is_recurring: false,
       recurrence_pattern: undefined,
+      recurrence_end_date: undefined,
+      recurrence_count: undefined,
     },
   });
 
@@ -135,8 +141,17 @@ export function TransactionModal({ open, onClose, transaction, defaultType = 'ex
         category_id: transaction.category_id || "",
         type: transaction.type as "income" | "expense",
         is_recurring: transaction.is_recurring || false,
-        recurrence_pattern: transaction.recurrence_pattern || undefined,
+        recurrence_pattern: transaction.recurrence_pattern as 'daily' | 'weekly' | 'monthly' | 'yearly' | undefined,
+        recurrence_end_date: transaction.recurrence_end_date ? new Date(transaction.recurrence_end_date) : undefined,
+        recurrence_count: transaction.recurrence_count || undefined,
       });
+      
+      // Determinar qual tipo de término estava configurado
+      if (transaction.recurrence_count) {
+        setRecurrenceEndType('count');
+      } else if (transaction.recurrence_end_date) {
+        setRecurrenceEndType('date');
+      }
     } else {
       form.reset({
         amount: 0,
@@ -146,9 +161,12 @@ export function TransactionModal({ open, onClose, transaction, defaultType = 'ex
         type: defaultType,
         is_recurring: false,
         recurrence_pattern: undefined,
+        recurrence_end_date: undefined,
+        recurrence_count: undefined,
       });
+      setRecurrenceEndType('count');
     }
-  }, [transaction, form, open]);
+  }, [transaction, form, open, defaultType]);
 
   const onSubmit = async (data: TransactionFormData) => {
     if (!user) return;
@@ -165,6 +183,8 @@ export function TransactionModal({ open, onClose, transaction, defaultType = 'ex
           type: data.type,
           is_recurring: data.is_recurring,
           recurrence_pattern: data.recurrence_pattern,
+          recurrence_end_date: data.recurrence_end_date ? format(data.recurrence_end_date, "yyyy-MM-dd") : null,
+          recurrence_count: data.recurrence_count || null,
           transaction_date: format(data.transaction_date, "yyyy-MM-dd"),
         });
       } else {
@@ -175,6 +195,8 @@ export function TransactionModal({ open, onClose, transaction, defaultType = 'ex
           type: data.type,
           is_recurring: data.is_recurring,
           recurrence_pattern: data.recurrence_pattern,
+          recurrence_end_date: data.recurrence_end_date ? format(data.recurrence_end_date, "yyyy-MM-dd") : null,
+          recurrence_count: data.recurrence_count || null,
           user_id: user.id,
           transaction_date: format(data.transaction_date, "yyyy-MM-dd"),
         });
@@ -427,6 +449,128 @@ export function TransactionModal({ open, onClose, transaction, defaultType = 'ex
                     </FormItem>
                   )}
                 />
+
+                {/* Tipo de término */}
+                <div className="space-y-3">
+                  <Label>Repetir</Label>
+                  <RadioGroup
+                    value={recurrenceEndType}
+                    onValueChange={(value: 'count' | 'date') => {
+                      setRecurrenceEndType(value);
+                      // Limpar o campo não usado
+                      if (value === 'count') {
+                        form.setValue('recurrence_end_date', undefined);
+                      } else {
+                        form.setValue('recurrence_count', undefined);
+                      }
+                    }}
+                    className="space-y-2"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="count" id="count" />
+                      <Label htmlFor="count" className="font-normal cursor-pointer">
+                        Número específico de vezes
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="date" id="date" />
+                      <Label htmlFor="date" className="font-normal cursor-pointer">
+                        Até uma data específica
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+
+                {/* Campo condicional: Número de repetições */}
+                {recurrenceEndType === 'count' && (
+                  <FormField
+                    control={form.control}
+                    name="recurrence_count"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Número de repetições</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              type="number"
+                              placeholder="Ex: 12"
+                              min={1}
+                              max={365}
+                              className="pl-9"
+                              value={field.value || ''}
+                              onChange={(e) => {
+                                const value = e.target.value ? parseInt(e.target.value) : undefined;
+                                field.onChange(value);
+                              }}
+                            />
+                          </div>
+                        </FormControl>
+                        <p className="text-xs text-muted-foreground">
+                          Máximo 365 repetições
+                        </p>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                {/* Campo condicional: Data de término */}
+                {recurrenceEndType === 'date' && (
+                  <FormField
+                    control={form.control}
+                    name="recurrence_end_date"
+                    render={({ field }) => {
+                      const [isOpen, setIsOpen] = useState(false);
+                      
+                      return (
+                        <FormItem className="flex flex-col">
+                          <FormLabel>Repetir até</FormLabel>
+                          <Popover open={isOpen} onOpenChange={setIsOpen}>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant="outline"
+                                  className={cn(
+                                    "w-full pl-3 text-left font-normal",
+                                    !field.value && "text-muted-foreground"
+                                  )}
+                                >
+                                  <CalendarDays className="mr-2 h-4 w-4" />
+                                  {field.value ? (
+                                    format(field.value, "PPP", { locale: ptBR })
+                                  ) : (
+                                    <span>Selecione a data final</span>
+                                  )}
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={field.value}
+                                onSelect={(date) => {
+                                  if (date) {
+                                    field.onChange(date);
+                                    setIsOpen(false);
+                                  }
+                                }}
+                                disabled={(date) => {
+                                  const transactionDate = form.getValues("transaction_date");
+                                  return startOfDay(date) <= startOfDay(transactionDate);
+                                }}
+                                initialFocus
+                                locale={ptBR}
+                                className="pointer-events-auto"
+                              />
+                            </PopoverContent>
+                          </Popover>
+                          <FormMessage />
+                        </FormItem>
+                      );
+                    }}
+                  />
+                )}
               </div>
             )}
 
