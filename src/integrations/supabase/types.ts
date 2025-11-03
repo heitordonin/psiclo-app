@@ -317,6 +317,44 @@ export type Database = {
         }
         Relationships: []
       }
+      recurring_transactions_control: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          last_generated_date: string
+          next_generation_date: string
+          parent_transaction_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_generated_date: string
+          next_generation_date: string
+          parent_transaction_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_generated_date?: string
+          next_generation_date?: string
+          parent_transaction_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_transactions_control_parent_transaction_id_fkey"
+            columns: ["parent_transaction_id"]
+            isOneToOne: true
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           amount: number
@@ -324,7 +362,11 @@ export type Database = {
           created_at: string | null
           description: string
           id: string
+          is_auto_generated: boolean | null
           is_recurring: boolean | null
+          parent_transaction_id: string | null
+          recurrence_count: number | null
+          recurrence_end_date: string | null
           recurrence_pattern: string | null
           transaction_date: string
           type: string
@@ -336,7 +378,11 @@ export type Database = {
           created_at?: string | null
           description: string
           id?: string
+          is_auto_generated?: boolean | null
           is_recurring?: boolean | null
+          parent_transaction_id?: string | null
+          recurrence_count?: number | null
+          recurrence_end_date?: string | null
           recurrence_pattern?: string | null
           transaction_date: string
           type: string
@@ -348,7 +394,11 @@ export type Database = {
           created_at?: string | null
           description?: string
           id?: string
+          is_auto_generated?: boolean | null
           is_recurring?: boolean | null
+          parent_transaction_id?: string | null
+          recurrence_count?: number | null
+          recurrence_end_date?: string | null
           recurrence_pattern?: string | null
           transaction_date?: string
           type?: string
@@ -360,6 +410,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "budget_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_parent_transaction_id_fkey"
+            columns: ["parent_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
             referencedColumns: ["id"]
           },
         ]
