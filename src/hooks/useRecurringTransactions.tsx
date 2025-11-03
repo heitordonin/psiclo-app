@@ -4,19 +4,7 @@ import { useAuth } from "./useAuth";
 import { toast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
 
-type RecurringTransaction = {
-  id: string;
-  user_id: string;
-  amount: number;
-  description: string;
-  category_id: string;
-  type: "income" | "expense";
-  recurrence_pattern: "daily" | "weekly" | "monthly" | "yearly";
-  start_date: string;
-  recurrence_end_date: string | null;
-  recurrence_count: number | null;
-  is_active: boolean;
-  created_at: string;
+type RecurringTransaction = Database["public"]["Tables"]["transactions"]["Row"] & {
   budget_categories: Database["public"]["Tables"]["budget_categories"]["Row"] | null;
 };
 
@@ -30,13 +18,14 @@ export function useRecurringTransactions() {
       if (!user) throw new Error("User not authenticated");
 
       const { data, error } = await supabase
-        .from("recurring_transactions" as any)
+        .from("transactions")
         .select(`
           *,
           budget_categories (*)
         `)
         .eq("user_id", user.id)
-        .eq("is_active", true)
+        .eq("is_recurring", true)
+        .is("parent_transaction_id", null)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -54,8 +43,8 @@ export function useDeleteRecurringTransaction() {
   return useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from("recurring_transactions" as any)
-        .update({ is_active: false })
+        .from("transactions")
+        .update({ is_recurring: false })
         .eq("id", id);
 
       if (error) throw error;

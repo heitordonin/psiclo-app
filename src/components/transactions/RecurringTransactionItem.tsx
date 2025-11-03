@@ -7,19 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-type RecurringTransaction = {
-  id: string;
-  user_id: string;
-  amount: number;
-  description: string;
-  category_id: string;
-  type: "income" | "expense";
-  recurrence_pattern: "daily" | "weekly" | "monthly" | "yearly";
-  start_date: string;
-  recurrence_end_date: string | null;
-  recurrence_count: number | null;
-  is_active: boolean;
-  created_at: string;
+type RecurringTransaction = Database["public"]["Tables"]["transactions"]["Row"] & {
   budget_categories: Database["public"]["Tables"]["budget_categories"]["Row"] | null;
 };
 
@@ -28,7 +16,7 @@ interface RecurringTransactionItemProps {
   onDelete: (id: string) => void;
 }
 
-const patternLabels = {
+const patternLabels: Record<string, string> = {
   daily: "Diária",
   weekly: "Semanal",
   monthly: "Mensal",
@@ -60,7 +48,7 @@ export function RecurringTransactionItem({ transaction, onDelete }: RecurringTra
             <p className="font-medium truncate">{transaction.description}</p>
             <Badge variant="outline" className="gap-1">
               <Repeat className="h-3 w-3" />
-              <span className="text-xs">{patternLabels[transaction.recurrence_pattern]}</span>
+              <span className="text-xs">{transaction.recurrence_pattern ? patternLabels[transaction.recurrence_pattern] : "N/A"}</span>
             </Badge>
           </div>
           
@@ -68,11 +56,10 @@ export function RecurringTransactionItem({ transaction, onDelete }: RecurringTra
             {transaction.budget_categories?.name || "Sem categoria"}
           </p>
 
-          {/* Info de recorrência */}
           <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
               <Calendar className="h-3 w-3" />
-              Início: {format(new Date(transaction.start_date), "dd/MM/yyyy", { locale: ptBR })}
+              Início: {format(new Date(transaction.transaction_date), "dd/MM/yyyy", { locale: ptBR })}
             </span>
             {transaction.recurrence_end_date && (
               <span className="flex items-center gap-1">
