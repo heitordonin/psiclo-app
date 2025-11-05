@@ -12,6 +12,7 @@ import { CurrencyInput } from "@/components/ui/currency-input";
 import { CategoryIcon } from "@/components/categories/CategoryIcon";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2 } from "lucide-react";
+import { isKnownIncomeName } from "@/hooks/useFixCategoryTypes";
 import type { Database } from "@/integrations/supabase/types";
 
 type Category = Database["public"]["Tables"]["budget_categories"]["Row"];
@@ -60,7 +61,10 @@ export function BudgetConfigSheet({
   const totalBudget = Object.values(budgets).reduce((sum, val) => sum + (val || 0), 0);
 
   // Filtrar apenas categorias de despesa
-  const expenseCategories = categories.filter(cat => cat.type === "expense");
+  // Também filtramos por nome para proteção extra contra categorias com tipo incorreto
+  const expenseCategories = categories.filter(cat => 
+    cat.type === "expense" && !isKnownIncomeName(cat.name)
+  );
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>

@@ -15,6 +15,7 @@ import {
   useSetBudget,
   useCopyBudget,
 } from "@/hooks/useBudget";
+import { fixMisTypedIncomeCategories, isKnownIncomeName } from "@/hooks/useFixCategoryTypes";
 import { Copy, Settings } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
@@ -46,15 +47,21 @@ export default function Budget() {
   const remaining = totalBudget - totalSpent;
 
   // Combinar dados para lista - filtrar apenas categorias de despesa
+  // Também filtramos por nome para proteção extra contra categorias com tipo incorreto
   const categoriesWithBudget: CategoryWithBudget[] =
     categories
-      ?.filter((cat) => cat.type === "expense")
+      ?.filter((cat) => cat.type === "expense" && !isKnownIncomeName(cat.name))
       .map((cat) => ({
         ...cat,
         budget:
           budgets?.items.find((b) => b.category_id === cat.id)?.planned_amount || 0,
         spent: spending?.byCategory[cat.id] || 0,
       })) || [];
+
+  // Corrigir categorias com tipo incorreto ao montar a página
+  useEffect(() => {
+    fixMisTypedIncomeCategories();
+  }, []);
 
   // Sistema de alertas
   useEffect(() => {
