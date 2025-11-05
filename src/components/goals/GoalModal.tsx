@@ -102,7 +102,7 @@ export function GoalModal({ goal, open, onClose, onSave }: GoalModalProps) {
               name="target_date"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Data Alvo (Opcional)</FormLabel>
+                  <FormLabel>Data Alvo</FormLabel>
                   <FormControl>
                     <Input 
                       type="date"
