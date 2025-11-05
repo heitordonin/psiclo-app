@@ -174,6 +174,7 @@ export default function CategoriesPage() {
               onEdit={handleEdit}
               onDelete={setDeletingCategory}
               emptyMessage="Nenhuma categoria padrão de receita"
+              showDownloadButton={true}
             />
             <CategorySection
               title="Minhas Categorias"
@@ -191,6 +192,7 @@ export default function CategoriesPage() {
               onEdit={handleEdit}
               onDelete={setDeletingCategory}
               emptyMessage="Nenhuma categoria padrão de despesa"
+              showDownloadButton={true}
             />
             <CategorySection
               title="Minhas Categorias"
@@ -243,14 +245,36 @@ interface CategorySectionProps {
   onEdit: (category: Category) => void;
   onDelete: (category: Category) => void;
   emptyMessage: string;
+  showDownloadButton?: boolean;
 }
 
-function CategorySection({ title, categories, onEdit, onDelete, emptyMessage }: CategorySectionProps) {
+function CategorySection({ title, categories, onEdit, onDelete, emptyMessage, showDownloadButton = false }: CategorySectionProps) {
+  const handleDownload = () => {
+    const link = document.createElement('a');
+    link.href = '/downloads/Categorias_padrao.xlsx';
+    link.download = 'Categorias_padrao.xlsx';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   if (categories.length === 0) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">{title}</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">{title}</CardTitle>
+            {showDownloadButton && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleDownload}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Baixar Planilha
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">{emptyMessage}</p>
@@ -262,7 +286,19 @@ function CategorySection({ title, categories, onEdit, onDelete, emptyMessage }: 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">{title}</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg">{title}</CardTitle>
+          {showDownloadButton && (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={handleDownload}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Baixar Planilha
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="p-0">
         <div className="divide-y">
