@@ -59,6 +59,9 @@ export function BudgetConfigSheet({
 
   const totalBudget = Object.values(budgets).reduce((sum, val) => sum + (val || 0), 0);
 
+  // Filtrar apenas categorias de despesa
+  const expenseCategories = categories.filter(cat => cat.type === "expense");
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="h-[85vh]">
@@ -71,7 +74,7 @@ export function BudgetConfigSheet({
 
         <ScrollArea className="h-[calc(85vh-180px)] mt-6 pr-4">
           <div className="space-y-4">
-            {categories.map((category) => (
+            {expenseCategories.map((category) => (
               <div key={category.id} className="space-y-2">
                 <div className="flex items-center gap-2">
                   <CategoryIcon icon={category.icon} color={category.color} size={20} />

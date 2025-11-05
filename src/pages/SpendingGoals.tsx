@@ -45,14 +45,16 @@ export default function Budget() {
   const totalSpent = spending?.total || 0;
   const remaining = totalBudget - totalSpent;
 
-  // Combinar dados para lista
+  // Combinar dados para lista - filtrar apenas categorias de despesa
   const categoriesWithBudget: CategoryWithBudget[] =
-    categories?.map((cat) => ({
-      ...cat,
-      budget:
-        budgets?.items.find((b) => b.category_id === cat.id)?.planned_amount || 0,
-      spent: spending?.byCategory[cat.id] || 0,
-    })) || [];
+    categories
+      ?.filter((cat) => cat.type === "expense")
+      .map((cat) => ({
+        ...cat,
+        budget:
+          budgets?.items.find((b) => b.category_id === cat.id)?.planned_amount || 0,
+        spent: spending?.byCategory[cat.id] || 0,
+      })) || [];
 
   // Sistema de alertas
   useEffect(() => {
