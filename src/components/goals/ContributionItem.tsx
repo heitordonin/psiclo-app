@@ -1,6 +1,6 @@
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { formatCurrency } from "@/lib/formatters";
+import { formatCurrency, type Currency } from "@/lib/formatters";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -20,15 +20,16 @@ type GoalContribution = Database["public"]["Tables"]["goal_contributions"]["Row"
 
 interface ContributionItemProps {
   contribution: GoalContribution;
+  currency: Currency;
   onDelete: () => void;
 }
 
-export function ContributionItem({ contribution, onDelete }: ContributionItemProps) {
+export function ContributionItem({ contribution, currency, onDelete }: ContributionItemProps) {
   return (
     <div className="flex items-center justify-between p-4 rounded-lg border bg-card">
       <div>
         <p className="font-semibold text-lg">
-          {formatCurrency(Number(contribution.amount))}
+          {formatCurrency(Number(contribution.amount), currency)}
         </p>
         <p className="text-sm text-muted-foreground">
           {format(new Date(contribution.contribution_date), "dd 'de' MMMM 'de' yyyy", {

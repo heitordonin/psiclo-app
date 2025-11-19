@@ -1,17 +1,22 @@
 import { forwardRef } from "react";
 import { NumericFormat } from "react-number-format";
 import { cn } from "@/lib/utils";
+import { CURRENCY_CONFIGS, type Currency } from "@/lib/formatters";
 
 interface CurrencyInputProps {
   value?: number;
   onChange: (value: number | undefined) => void;
+  currency?: Currency;
   placeholder?: string;
   className?: string;
   disabled?: boolean;
 }
 
 export const CurrencyInput = forwardRef<HTMLInputElement, CurrencyInputProps>(
-  ({ value, onChange, placeholder = "R$ 0,00", className, disabled, ...props }, ref) => {
+  ({ value, onChange, currency = 'BRL', placeholder, className, disabled, ...props }, ref) => {
+    const config = CURRENCY_CONFIGS[currency];
+    const defaultPlaceholder = `${config.symbol} 0${config.decimalSeparator}00`;
+
     return (
       <NumericFormat
         getInputRef={ref}
@@ -19,13 +24,13 @@ export const CurrencyInput = forwardRef<HTMLInputElement, CurrencyInputProps>(
         onValueChange={(values) => {
           onChange(values.floatValue);
         }}
-        thousandSeparator="."
-        decimalSeparator=","
-        prefix="R$ "
+        thousandSeparator={config.thousandSeparator}
+        decimalSeparator={config.decimalSeparator}
+        prefix={`${config.symbol} `}
         decimalScale={2}
         fixedDecimalScale
         allowNegative={false}
-        placeholder={placeholder}
+        placeholder={placeholder || defaultPlaceholder}
         disabled={disabled}
         onFocus={(e) => {
           // Seleciona todo o texto ao focar para facilitar edição

@@ -1,5 +1,5 @@
 import { Progress } from "@/components/ui/progress";
-import { formatCurrency } from "@/lib/formatters";
+import { formatCurrency, type Currency } from "@/lib/formatters";
 import { differenceInDays, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Calendar, TrendingUp } from "lucide-react";
@@ -8,9 +8,10 @@ interface GoalProgressProps {
   currentAmount: number;
   targetAmount: number;
   targetDate?: string;
+  currency: Currency;
 }
 
-export function GoalProgress({ currentAmount, targetAmount, targetDate }: GoalProgressProps) {
+export function GoalProgress({ currentAmount, targetAmount, targetDate, currency }: GoalProgressProps) {
   const progress = targetAmount > 0 ? (currentAmount / targetAmount) * 100 : 0;
   const remaining = targetAmount - currentAmount;
 
@@ -29,12 +30,12 @@ export function GoalProgress({ currentAmount, targetAmount, targetDate }: GoalPr
       <div className="space-y-2">
         <div className="flex items-baseline justify-between">
           <span className="text-sm text-muted-foreground">Valor Atual</span>
-          <span className="text-3xl font-bold">{formatCurrency(currentAmount)}</span>
+          <span className="text-3xl font-bold">{formatCurrency(currentAmount, currency)}</span>
         </div>
         <div className="flex items-baseline justify-between">
           <span className="text-sm text-muted-foreground">Meta</span>
           <span className="text-xl font-semibold text-muted-foreground">
-            {formatCurrency(targetAmount)}
+            {formatCurrency(targetAmount, currency)}
           </span>
         </div>
       </div>
@@ -49,7 +50,7 @@ export function GoalProgress({ currentAmount, targetAmount, targetDate }: GoalPr
           <span className="text-muted-foreground">{progress.toFixed(1)}% alcançado</span>
           {remaining > 0 && (
             <span className="font-medium text-muted-foreground">
-              Faltam {formatCurrency(remaining)}
+              Faltam {formatCurrency(remaining, currency)}
             </span>
           )}
         </div>

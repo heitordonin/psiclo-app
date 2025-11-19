@@ -23,6 +23,7 @@ import { GoalProgress } from "@/components/goals/GoalProgress";
 import { ContributionModal } from "@/components/goals/ContributionModal";
 import { ContributionItem } from "@/components/goals/ContributionItem";
 import { GoalModal } from "@/components/goals/GoalModal";
+import { type Currency } from "@/lib/formatters";
 import {
   useFinancialGoals,
   useGoalContributions,
@@ -73,13 +74,17 @@ export default function GoalDetails() {
 
   const handleUpdateGoal = (data: {
     name: string;
+    currency: string;
     target_amount: number;
     target_date?: string;
+    goal_type: string;
   }) => {
     updateGoal.mutate({
       id: id!,
       updates: {
-        ...data,
+        name: data.name,
+        target_amount: data.target_amount,
+        target_date: data.target_date,
         goal_type: 'custom',
       },
     });
@@ -164,6 +169,7 @@ export default function GoalDetails() {
           currentAmount={Number(goal.current_amount)}
           targetAmount={Number(goal.target_amount)}
           targetDate={goal.target_date || undefined}
+          currency={goal.currency as Currency}
         />
 
         {/* Add Contribution Button */}
@@ -191,6 +197,7 @@ export default function GoalDetails() {
                 <ContributionItem
                   key={contribution.id}
                   contribution={contribution}
+                  currency={goal.currency as Currency}
                   onDelete={() => handleDeleteContribution(contribution.id)}
                 />
               ))}
@@ -209,6 +216,7 @@ export default function GoalDetails() {
         open={showContributionModal}
         onClose={() => setShowContributionModal(false)}
         onSave={handleAddContribution}
+        goalCurrency={goal.currency as Currency}
       />
 
       <GoalModal
