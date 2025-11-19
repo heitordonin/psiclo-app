@@ -26,6 +26,7 @@ import {
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { type Currency } from "@/lib/formatters";
 
 const contributionSchema = z.object({
   amount: z.number().min(0.01, "Valor deve ser maior que zero"),
@@ -38,9 +39,10 @@ interface ContributionModalProps {
   open: boolean;
   onClose: () => void;
   onSave: (amount: number, date: string) => void;
+  goalCurrency: Currency;
 }
 
-export function ContributionModal({ open, onClose, onSave }: ContributionModalProps) {
+export function ContributionModal({ open, onClose, onSave, goalCurrency }: ContributionModalProps) {
   const form = useForm<ContributionFormData>({
     resolver: zodResolver(contributionSchema),
     defaultValues: {
@@ -74,6 +76,7 @@ export function ContributionModal({ open, onClose, onSave }: ContributionModalPr
                     <CurrencyInput
                       value={field.value}
                       onChange={(value) => field.onChange(value || 0)}
+                      currency={goalCurrency}
                     />
                   </FormControl>
                   <FormMessage />

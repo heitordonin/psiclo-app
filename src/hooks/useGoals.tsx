@@ -30,6 +30,7 @@ export function useCreateFinancialGoal() {
       goal_type: string;
       target_amount: number;
       target_date?: string;
+      currency: string;
     }) => {
       const { data: userData, error: userError } = await supabase.auth.getUser();
       if (userError) throw userError;
@@ -41,6 +42,7 @@ export function useCreateFinancialGoal() {
           goal_type: 'custom',
           target_amount: goal.target_amount,
           target_date: goal.target_date,
+          currency: goal.currency,
           user_id: userData.user?.id,
           current_amount: 0,
         })

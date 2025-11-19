@@ -1,7 +1,7 @@
 import { Target } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { formatCurrency } from "@/lib/formatters";
+import { formatCurrency, type Currency } from "@/lib/formatters";
 import { format, parseISO } from "date-fns";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -44,9 +44,9 @@ export function GoalCard({ goal, onClick }: GoalCardProps) {
 
       <div className="space-y-2">
         <div className="flex justify-between items-baseline text-sm">
-          <span className="font-medium">{formatCurrency(Number(goal.current_amount))}</span>
+          <span className="font-medium">{formatCurrency(Number(goal.current_amount), goal.currency as Currency)}</span>
           <span className="text-muted-foreground text-xs">
-            de {formatCurrency(Number(goal.target_amount))}
+            de {formatCurrency(Number(goal.target_amount), goal.currency as Currency)}
           </span>
         </div>
         

@@ -231,6 +231,7 @@ export type Database = {
       financial_goals: {
         Row: {
           created_at: string | null
+          currency: string
           current_amount: number | null
           goal_type: string | null
           id: string
@@ -241,6 +242,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          currency?: string
           current_amount?: number | null
           goal_type?: string | null
           id?: string
@@ -251,6 +253,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          currency?: string
           current_amount?: number | null
           goal_type?: string | null
           id?: string

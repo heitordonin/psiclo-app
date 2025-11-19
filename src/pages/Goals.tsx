@@ -16,9 +16,10 @@ export default function Goals() {
 
   const handleCreateGoal = (data: {
     name: string;
-    goal_type: string;
+    currency: string;
     target_amount: number;
     target_date?: string;
+    goal_type: string;
   }) => {
     createGoal.mutate(data);
   };
