@@ -1,12 +1,19 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { useState } from "react";
-import type { PeriodType, ReportFilters } from "@/hooks/useReports";
-import { DateRange } from "react-day-picker";
+import type { DateRange } from "react-day-picker";
+
+export type PeriodType = 'this-month' | 'last-month' | 'last-3-months' | 'last-6-months' | 'this-year' | 'last-year' | 'custom';
+
+export interface ReportFilters {
+  startDate: string;
+  endDate: string;
+  period: PeriodType;
+}
 
 interface PeriodSelectorProps {
   value: ReportFilters;
