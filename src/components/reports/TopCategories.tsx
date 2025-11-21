@@ -19,19 +19,11 @@ export function TopCategories({ categories }: TopCategoriesProps) {
         {topCategories.map((category, index) => (
           <Card key={category.id} className="p-4 hover:shadow-lg transition-shadow">
             <div className="flex items-start justify-between mb-3">
-              <div 
-                className="w-10 h-10 rounded-lg flex items-center justify-center"
-                style={{ backgroundColor: `${category.color}20` }}
-              >
-                {category.icon && (
-                  <span 
-                    className="text-xl"
-                    style={{ color: category.color || undefined }}
-                  >
-                    {category.icon}
-                  </span>
-                )}
-              </div>
+              <CategoryIcon 
+                icon={category.icon || 'Wallet'} 
+                color={category.color} 
+                size={20}
+              />
               <Badge variant="secondary" className="text-xs">
                 #{index + 1}
               </Badge>
