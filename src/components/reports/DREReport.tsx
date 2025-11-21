@@ -33,14 +33,11 @@ export function DREReport({ dreData }: DREReportProps) {
       <div className="flex items-center gap-2 min-w-0 flex-1">
         {category.icon && !isSubcategory && (
           <div className="flex-shrink-0">
-            <div 
-              className="w-6 h-6 rounded-full flex items-center justify-center"
-              style={{ backgroundColor: `${category.color}15` }}
-            >
-              <span style={{ color: category.color || 'currentColor' }}>
-                {category.icon}
-              </span>
-            </div>
+            <CategoryIcon 
+              icon={category.icon} 
+              color={category.color} 
+              size={12}
+            />
           </div>
         )}
         <span className={`${isSubcategory ? 'text-sm' : 'font-medium'} truncate`}>
