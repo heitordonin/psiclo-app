@@ -4,17 +4,10 @@ import { startOfMonth, endOfMonth, startOfYear, endOfYear, subMonths, subYears, 
 import { ptBR } from "date-fns/locale";
 import type { Database } from "@/integrations/supabase/types";
 import { groupTransactionsByCategory, calculateDREData, generateInsights } from "@/lib/report-utils";
+import type { PeriodType, ReportFilters } from "@/components/reports/PeriodSelector";
 
 type Transaction = Database["public"]["Tables"]["transactions"]["Row"];
 type Category = Database["public"]["Tables"]["budget_categories"]["Row"];
-
-export type PeriodType = 'this-month' | 'last-month' | 'last-3-months' | 'last-6-months' | 'this-year' | 'last-year' | 'custom';
-
-export interface ReportFilters {
-  startDate: string;
-  endDate: string;
-  period: PeriodType;
-}
 
 function calculateDateRange(period: PeriodType): { startDate: Date; endDate: Date; label: string } {
   const now = new Date();

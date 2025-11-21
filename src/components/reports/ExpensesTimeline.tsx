@@ -1,8 +1,8 @@
 import { Card } from "@/components/ui/card";
-import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { formatCurrency } from "@/lib/formatters";
 import { useExpensesTimeline } from "@/hooks/useReports";
-import type { ReportFilters } from "@/hooks/useReports";
+import type { ReportFilters } from "@/components/reports/PeriodSelector";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface ExpensesTimelineProps {

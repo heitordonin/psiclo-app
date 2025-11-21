@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { BottomNav } from "@/components/BottomNav";
-import { PeriodSelector } from "@/components/reports/PeriodSelector";
+import { PeriodSelector, type ReportFilters } from "@/components/reports/PeriodSelector";
 import { MetricsSummary } from "@/components/reports/MetricsSummary";
 import { ExpensesByCategory } from "@/components/reports/ExpensesByCategory";
 import { TopCategories } from "@/components/reports/TopCategories";
@@ -10,7 +10,7 @@ import { ExpensesByMonth } from "@/components/reports/ExpensesByMonth";
 import { InsightsPanel } from "@/components/reports/InsightsPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useExpenseReports, type ReportFilters } from "@/hooks/useReports";
+import { useExpenseReports } from "@/hooks/useReports";
 import { BarChart3 } from "lucide-react";
 
 export default function Reports() {
